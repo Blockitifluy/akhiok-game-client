@@ -1,15 +1,16 @@
 #![cfg_attr(not(debug_assertions), window_subsystem = "windows")]
+pub mod gl_helper;
+
 use beryllium::{
     events::Event,
     init::InitFlags,
     video::{CreateWinArgs, GlContextFlags, GlProfile, GlSwapInterval},
     *,
 };
-use core::{
-    convert::TryInto,
-    mem::{size_of, size_of_val},
-};
+use core::{convert::TryInto, mem::size_of};
 use ogl33::*;
+
+use crate::gl_helper::*;
 
 type Vertex = [f32; 3];
 const VERTICES: [Vertex; 3] = [[-0.5, -0.5, 0.0], [0.5, -0.5, 0.0], [0.0, 0.5, 0.0]];
@@ -62,29 +63,26 @@ fn main() {
     let win = sdl
         .create_gl_window(win_args)
         .expect("couldn't make a window and context");
-    let _ = win.set_swap_interval(GlSwapInterval::Vsync);
+    let _ = win.set_swap_interval(GlSwapInterval::Vsync).unwrap();
 
     unsafe {
         load_gl_with(|f_name| win.get_proc_address(f_name.cast()));
+    }
 
-        glClearColor(0.2, 0.3, 0.3, 1.0);
+    clear_color(0.2, 0.3, 0.3, 1.0);
 
-        let mut vao = 0;
-        glGenVertexArrays(1, &mut vao);
-        assert_ne!(vao, 0);
-        glBindVertexArray(vao);
+    let vao = VertexArray::new().expect("couldn't make a VAO");
+    vao.bind();
 
-        let mut vbo = 0;
-        glGenBuffers(1, &mut vbo);
-        assert_ne!(vbo, 0);
-        glBindBuffer(GL_ARRAY_BUFFER, vbo);
-        glBufferData(
-            GL_ARRAY_BUFFER,
-            size_of_val(&VERTICES) as isize,
-            VERTICES.as_ptr().cast(),
-            GL_STATIC_DRAW,
-        );
+    let vbo = Buffer::new().expect("couldn't make a VBO");
+    vbo.bind(BufferType::Array);
+    gl_helper::buffer_data(
+        BufferType::Array,
+        bytemuck::cast_slice(&VERTICES),
+        GL_STATIC_DRAW,
+    );
 
+    unsafe {
         glVertexAttribPointer(
             0,
             3,
@@ -95,62 +93,8 @@ fn main() {
         );
         glEnableVertexAttribArray(0);
 
-        let vertex_shader = glCreateShader(GL_VERTEX_SHADER);
-        assert_ne!(vertex_shader, 0);
-
-        glShaderSource(
-            vertex_shader,
-            1,
-            &(VERT_SHADER.as_bytes().as_ptr().cast()),
-            &(VERT_SHADER.len().try_into().unwrap()),
-        );
-
-        glCompileShader(vertex_shader);
-        let mut success = 0;
-        glGetShaderiv(vertex_shader, GL_COMPILE_STATUS, &mut success);
-        if success == 0 {
-            let mut v: Vec<u8> = Vec::with_capacity(1024);
-            let mut log_len = 0_132;
-            glGetShaderInfoLog(vertex_shader, 1024, &mut log_len, v.as_mut_ptr().cast());
-            v.set_len(log_len.try_into().unwrap());
-            panic!("vertex compile error: {}", String::from_utf8_lossy(&v));
-        }
-
-        let fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
-        assert_ne!(fragment_shader, 0);
-
-        glShaderSource(
-            vertex_shader,
-            1,
-            &(FRAG_SHADER.as_bytes().as_ptr().cast()),
-            &(VERT_SHADER.len().try_into().unwrap()),
-        );
-
-        glCompileShader(fragment_shader);
-        glGetShaderiv(fragment_shader, GL_COMPILE_STATUS, &mut success);
-        if success == 0 {
-            let mut v: Vec<u8> = Vec::with_capacity(1024);
-            let mut log_len = 0_i32;
-            glGetShaderInfoLog(fragment_shader, 1024, &mut log_len, v.as_mut_ptr().cast());
-            v.set_len(log_len.try_into().unwrap());
-            panic!("fragment compile error: {}", String::from_utf8_lossy(&v));
-        }
-
-        let shader_program = glCreateProgram();
-        glAttachShader(shader_program, vertex_shader);
-        glAttachShader(shader_program, fragment_shader);
-
-        glGetShaderiv(shader_program, GL_LINK_STATUS, &mut success);
-        if success == 0 {
-            let mut v: Vec<u8> = Vec::with_capacity(1024);
-            let mut log_len = 0_i32;
-            glGetProgramInfoLog(shader_program, 1024, &mut log_len, v.as_mut_ptr().cast());
-            v.set_len(log_len.try_into().unwrap());
-            panic!("program link error: {}", String::from_utf8_lossy(&v));
-        }
-
-        glDeleteShader(vertex_shader);
-        glDeleteShader(fragment_shader);
+        let shader_program = ShaderProgram::from_vert_frag(VERT_SHADER, FRAG_SHADER).unwrap();
+        shader_program.use_program();
     }
 
     'main_loop: loop {
