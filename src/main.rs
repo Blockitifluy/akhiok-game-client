@@ -13,7 +13,16 @@ use ogl33::*;
 use crate::gl_helper::*;
 
 type Vertex = [f32; 3];
-const VERTICES: [Vertex; 3] = [[-0.5, -0.5, 0.0], [0.5, -0.5, 0.0], [0.0, 0.5, 0.0]];
+type TriIndexes = [u32; 3];
+
+const VERTICES: [Vertex; 4] = [
+    [0.5, 0.5, 0.0],
+    [0.5, -0.5, 0.0],
+    [-0.5, -0.5, 0.0],
+    [-0.5, 0.5, 0.0],
+];
+
+const INDICES: [TriIndexes; 2] = [[0, 1, 3], [1, 2, 3]];
 const WINDOW_TITLE: &str = "Test Window";
 
 const VERT_SHADER: &str = r#"#version 330 core
@@ -76,9 +85,17 @@ fn main() {
 
     let vbo = Buffer::new().expect("couldn't make a VBO");
     vbo.bind(BufferType::Array);
-    gl_helper::buffer_data(
+    buffer_data(
         BufferType::Array,
         bytemuck::cast_slice(&VERTICES),
+        GL_STATIC_DRAW,
+    );
+
+    let ebo = Buffer::new().expect("couldn't make a ebo");
+    ebo.bind(BufferType::ElementArray);
+    buffer_data(
+        BufferType::ElementArray,
+        bytemuck::cast_slice(&INDICES),
         GL_STATIC_DRAW,
     );
 
@@ -97,6 +114,7 @@ fn main() {
         shader_program.use_program();
     }
 
+    polygon_mode(gl_helper::PolygonMode::Line);
     'main_loop: loop {
         // handle events this frame
         while let Some(event) = sdl.poll_events() {
@@ -108,7 +126,7 @@ fn main() {
 
         unsafe {
             glClear(GL_COLOR_BUFFER_BIT);
-            glDrawArrays(GL_TRIANGLES, 0, 3);
+            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0 as *const _);
         }
         win.swap_window();
     }
