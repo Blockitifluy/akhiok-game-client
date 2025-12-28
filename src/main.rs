@@ -9,14 +9,14 @@ use ogl33::*;
 use crate::gl_helper::*;
 use crate::window::*;
 
-type Vertex = [f32; 3];
+type VertexData = [f32; 6];
 type TriIndexes = [u32; 3];
 
-const VERTICES: [Vertex; 4] = [
-    [0.5, 0.5, 0.0],
-    [0.5, -0.5, 0.0],
-    [-0.5, -0.5, 0.0],
-    [-0.5, 0.5, 0.0],
+const VERTICES: [VertexData; 4] = [
+    [0.5, 0.5, 0.0, 1.0, 0.0, 0.0],
+    [0.5, -0.5, 0.0, 0.0, 1.0, 0.0],
+    [-0.5, -0.5, 0.0, 0.0, 0.0, 1.0],
+    [-0.5, 0.5, 0.0, 1.0, 1.0, 1.0],
 ];
 
 const INDICES: [TriIndexes; 2] = [[0, 1, 3], [1, 2, 3]];
@@ -62,19 +62,24 @@ fn main() {
     );
 
     unsafe {
+        let vertex_data_size = size_of::<VertexData>().try_into().unwrap();
+
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, vertex_data_size, 0 as *const _);
+        glEnableVertexAttribArray(0);
+
         glVertexAttribPointer(
-            0,
+            1,
             3,
             GL_FLOAT,
             GL_FALSE,
-            size_of::<Vertex>().try_into().unwrap(),
-            0 as *const _,
+            vertex_data_size,
+            (3 * size_of::<f32>()) as *const _,
         );
-        glEnableVertexAttribArray(0);
-
-        let shader_program = ShaderProgram::from_vert_frag_file(VERT_SHADER, FRAG_SHADER).unwrap();
-        shader_program.use_program();
+        glEnableVertexAttribArray(1);
     }
+
+    let shader_program = ShaderProgram::from_vert_frag_file(VERT_SHADER, FRAG_SHADER).unwrap();
+    shader_program.use_program();
 
     polygon_mode(gl_helper::PolygonMode::Fill);
     win.render_loop();
