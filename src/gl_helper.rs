@@ -1,6 +1,8 @@
-use ogl33::*;
-pub struct VertexArray(pub GLuint);
+use std::fs;
 
+use ogl33::*;
+
+pub struct VertexArray(pub GLuint);
 impl VertexArray {
     pub fn new() -> Option<Self> {
         let mut vao = 0_u32;
@@ -29,7 +31,6 @@ pub enum ShaderType {
 }
 
 pub struct Shader(pub GLuint);
-
 impl Shader {
     pub fn new(ty: ShaderType) -> Option<Self> {
         let shader = unsafe { glCreateShader(ty as GLenum) };
@@ -165,6 +166,15 @@ impl ShaderProgram {
             Err(out)
         }
     }
+
+    pub fn from_vert_frag_file(vert_path: &str, frag_path: &str) -> Result<Self, String> {
+        let (vert, frag) = (
+            fs::read_to_string(vert_path).expect("couldn't read vert shader file"),
+            fs::read_to_string(frag_path).expect("couldn't read frag shader file"),
+        );
+
+        Self::from_vert_frag(vert.as_str(), frag.as_str())
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -185,7 +195,6 @@ pub enum BufferType {
 }
 
 pub struct Buffer(pub GLuint);
-
 impl Buffer {
     pub fn new() -> Option<Self> {
         let mut vbo = 0;
