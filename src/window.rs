@@ -5,10 +5,12 @@ use beryllium::{
     *,
 };
 use ogl33::*;
+use std::ptr;
+use ultraviolet::Mat4;
 
 use crate::gl_helper::*;
 
-/// A wrapper for `GlWindow` and multiple GL objects:
+/// A wrapper for `GlWindow`, shader program and multiple GL objects:
 /// - `vao`,
 /// - `vbo` and
 /// - `ebo`
@@ -19,6 +21,7 @@ pub struct Window {
     pub vbo: Buffer,
     /// Element Buffer Object
     pub ebo: Buffer,
+    pub shader_program: ShaderProgram,
     pub sdl: Sdl,
     pub window: GlWindow,
 }
@@ -39,6 +42,7 @@ impl Window {
         let win_struct = Self {
             window: win,
             sdl: sdl,
+            shader_program: ShaderProgram { 0: 0 },
             vao: VertexArray { 0: 0 },
             vbo: Buffer { 0: 0 },
             ebo: Buffer { 0: 0 },
@@ -47,10 +51,10 @@ impl Window {
         Ok(win_struct)
     }
 
-    /// Initilises the objects for the window
+    /// Initilises the objects and program for the window
     /// # Returns
     /// `void` or an error message.
-    pub fn init_objects(&mut self) -> Result<(), &'static str> {
+    pub fn init_objects(&mut self, vert: &str, frag: &str) -> Result<(), &'static str> {
         let vao_null = VertexArray::new();
         let Some(vao) = vao_null else {
             return Err("couldn't make a vao");
@@ -72,13 +76,26 @@ impl Window {
         ebo.bind(BufferType::ElementArray);
         self.ebo = ebo;
 
+        let shader_program_ex = ShaderProgram::from_vert_frag_file(vert, frag);
+        let Ok(shader_program) = shader_program_ex else {
+            return Err("couldn't make shader program");
+        };
+        self.shader_program = shader_program;
         Ok(())
+    }
+
+    pub fn delete(&self) {
+        unsafe {
+            glDeleteVertexArrays(1, self.vao.0 as *const _);
+            glDeleteBuffers(1, self.vbo.0 as *const _);
+            glDeleteBuffers(1, self.ebo.0 as *const _);
+        }
     }
 
     /// Executes the render loop
     /// # Note
     /// The loop doesn't run in a different thread
-    pub fn render_loop(self) {
+    pub fn render_loop(&self) {
         'main_loop: loop {
             while let Some(event) = self.sdl.poll_events() {
                 match event {
@@ -88,8 +105,10 @@ impl Window {
             }
 
             unsafe {
-                glClear(GL_COLOR_BUFFER_BIT);
-                glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0 as *const _);
+                glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+                self.shader_program
+                    .set_matrix4("transform\0", Mat4::from_rotation_z(90.0_f32));
+                glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, ptr::null());
             }
             self.window.swap_window();
         }
@@ -139,3 +158,4 @@ impl Default for Window {
         };
     }
 }
+

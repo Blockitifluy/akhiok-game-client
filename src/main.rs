@@ -1,4 +1,4 @@
-#![cfg_attr(not(debug_assertions), window_subsystem = "windows")]
+#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 pub mod gl_helper;
 pub mod texture;
 pub mod window;
@@ -6,6 +6,7 @@ pub mod window;
 use beryllium::video::{CreateWinArgs, GlSwapInterval};
 use core::{convert::TryInto, mem::size_of};
 use ogl33::*;
+use std::ptr;
 
 use crate::gl_helper::*;
 use crate::texture::*;
@@ -51,7 +52,7 @@ fn main() {
 
     clear_color(0.2, 0.3, 0.3, 1.0);
 
-    win.init_objects().unwrap();
+    win.init_objects(VERT_SHADER, FRAG_SHADER).unwrap();
 
     buffer_data(
         BufferType::Array,
@@ -88,14 +89,13 @@ fn main() {
         bitmap.free();
     }
 
-    let shader_program = ShaderProgram::from_vert_frag_file(VERT_SHADER, FRAG_SHADER).unwrap();
-    shader_program.use_program();
+    win.shader_program.use_program();
 
     unsafe {
         let vertex_data_size = size_of::<VertexData>().try_into().unwrap();
 
         // position
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, vertex_data_size, 0 as *const _);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, vertex_data_size, ptr::null());
         glEnableVertexAttribArray(0);
 
         // color
@@ -123,4 +123,5 @@ fn main() {
 
     polygon_mode(gl_helper::PolygonMode::Fill);
     win.render_loop();
+    win.shader_program.delete();
 }

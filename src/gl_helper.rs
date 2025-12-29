@@ -1,6 +1,15 @@
 use std::fs;
 
 use ogl33::*;
+use ultraviolet::Mat4;
+
+#[macro_export]
+macro_rules! null_str {
+    ($lit:literal) => {{
+        const _: &str = $lit;
+        concat!($lit, "\0")
+    }};
+}
 
 pub struct VertexArray(pub GLuint);
 impl VertexArray {
@@ -174,6 +183,38 @@ impl ShaderProgram {
         );
 
         Self::from_vert_frag(vert.as_str(), frag.as_str())
+    }
+
+    pub fn set_bool(&self, name: &str, value: bool) {
+        unsafe {
+            glUniform1i(
+                glGetUniformLocation(self.0, name.as_ptr().cast()),
+                value as i32,
+            );
+        }
+    }
+
+    pub fn set_int(&self, name: &str, value: i32) {
+        unsafe {
+            glUniform1i(glGetUniformLocation(self.0, name.as_ptr().cast()), value);
+        }
+    }
+
+    pub fn set_float(&self, name: &str, value: f32) {
+        unsafe {
+            glUniform1f(glGetUniformLocation(self.0, name.as_ptr().cast()), value);
+        }
+    }
+
+    pub fn set_matrix4(&self, name: &str, value: Mat4) {
+        unsafe {
+            glUniformMatrix4fv(
+                glGetUniformLocation(self.0, name.as_ptr().cast()),
+                1,
+                GL_FALSE,
+                value.as_ptr(),
+            );
+        }
     }
 }
 
