@@ -1,6 +1,11 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 pub mod gl_helper;
+pub mod mesh;
 pub mod texture;
+pub mod datatypes {
+    pub mod color;
+    pub mod vectors;
+}
 pub mod window;
 
 use beryllium::video::{CreateWinArgs, GlSwapInterval};
@@ -9,20 +14,10 @@ use ogl33::*;
 use std::ptr;
 
 use crate::gl_helper::*;
+use crate::mesh::*;
 use crate::texture::*;
 use crate::window::*;
 
-type VertexData = [f32; 8];
-type TriIndexes = [u32; 3];
-
-const VERTICES: [VertexData; 4] = [
-    [0.5, 0.5, 0.0, 1.0, 0.0, 0.0, 1.0, 1.0],
-    [0.5, -0.5, 0.0, 0.0, 1.0, 0.0, 1.0, 0.0],
-    [-0.5, -0.5, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0],
-    [-0.5, 0.5, 0.0, 1.0, 1.0, 1.0, 0.0, 1.0],
-];
-
-const INDICES: [TriIndexes; 2] = [[0, 1, 3], [1, 2, 3]];
 const WINDOW_TITLE: &str = "Test Window";
 
 const VERT_SHADER: &str = "src/shaders/vert.glsl";
@@ -53,16 +48,17 @@ fn main() {
     clear_color(0.2, 0.3, 0.3, 1.0);
 
     win.init_objects(VERT_SHADER, FRAG_SHADER).unwrap();
+    let mesh = Mesh::load_mesh_from_file("assets/meshs/plane.mesh").unwrap();
 
     buffer_data(
         BufferType::Array,
-        bytemuck::cast_slice(&VERTICES),
+        bytemuck::cast_slice(&mesh.to_vertex_data_internal()),
         GL_STATIC_DRAW,
     );
 
     buffer_data(
         BufferType::ElementArray,
-        bytemuck::cast_slice(&INDICES),
+        bytemuck::cast_slice(&mesh.indices),
         GL_STATIC_DRAW,
     );
 
@@ -92,7 +88,7 @@ fn main() {
     win.shader_program.use_program();
 
     unsafe {
-        let vertex_data_size = size_of::<VertexData>().try_into().unwrap();
+        let vertex_data_size = size_of::<VertexDataInternal>().try_into().unwrap();
 
         // position
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, vertex_data_size, ptr::null());
