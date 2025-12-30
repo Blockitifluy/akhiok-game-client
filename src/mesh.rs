@@ -1,11 +1,11 @@
-use std::{fs, io::Read, str::FromStr, vec::*};
+use std::{fs, io::Read, vec::*};
 
 use crate::datatypes::{color::*, vectors::*};
 
 pub type VertexDataInternal = [f32; 8];
 pub type TriIndexes = [u32; 3];
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct VertexData {
     pub position: Vector3,
     pub color: Color3,
@@ -49,7 +49,7 @@ const INDICES_SECTION_NAME: &str = "Indices";
 const COLOR_SECTION_NAME: &str = "Color";
 const TEXCOORD_SECTION_NAME: &str = "TexCoord";
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Mesh {
     pub vertices: Vec<VertexData>,
     pub indices: Vec<u32>,
@@ -135,7 +135,7 @@ impl Mesh {
 
             if is_whitespace && !num_b.is_empty() {
                 // compute
-                let v_ex = num_b.parse::<f32>();
+                let v_ex = num_b.trim().parse::<f32>();
                 let Ok(v) = v_ex else {
                     return Err(format!(
                         "couldn't parse value at {}: invalid floating point value ({})",
@@ -311,22 +311,17 @@ impl Mesh {
         }
 
         let pos_len = pos_data.len();
-        let color_len = color_data.len();
-        let coord_len = texcoord_data.len();
-
-        let same_len = pos_len == color_len && pos_len == coord_len && color_len == coord_len;
-        if !same_len {
-            return Err(
-                String::from_str("vertices, color, coord are not the same length").unwrap(),
-            );
-        }
 
         let mut vertex_data = Vec::<VertexData>::with_capacity(pos_len);
         for i in 0..pos_len {
             vertex_data.push(VertexData::new(
                 pos_data[i],
-                color_data[i],
-                texcoord_data[i],
+                *color_data.get(i).unwrap_or(&Color3 {
+                    r: 0.0,
+                    g: 0.0,
+                    b: 0.0,
+                }),
+                *texcoord_data.get(i).unwrap_or(&Vector2::new(0.0, 0.0)),
             ));
         }
 
@@ -374,5 +369,24 @@ impl Mesh {
 
     pub fn to_vertex_data_internal(&self) -> Vec<VertexDataInternal> {
         self.vertices.iter().map(|v| v.to_internal()).collect()
+    }
+
+    pub fn to_indices_tri(&self) -> Vec<TriIndexes> {
+        let mut tri = Vec::<TriIndexes>::with_capacity(self.indices.len() / 3);
+        let mut swap = 0_u8;
+        let (mut a, mut b) = (0_u32, 0_u32);
+
+        for index in &self.indices {
+            match swap {
+                0 => a = *index,
+                1 => b = *index,
+                2 => {
+                    tri.push([a, b, *index]);
+                }
+                _ => panic!("internal error: swap out of range"),
+            }
+            swap = (swap + 1) % 3;
+        }
+        tri
     }
 }
