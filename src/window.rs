@@ -41,11 +41,11 @@ impl Window {
 
         let win_struct = Self {
             window: win,
-            sdl: sdl,
-            shader_program: ShaderProgram { 0: 0 },
-            vao: VertexArray { 0: 0 },
-            vbo: Buffer { 0: 0 },
-            ebo: Buffer { 0: 0 },
+            sdl,
+            shader_program: ShaderProgram(0),
+            vao: VertexArray(0),
+            vbo: Buffer(0),
+            ebo: Buffer(0),
         };
 
         Ok(win_struct)
@@ -53,7 +53,7 @@ impl Window {
 
     /// Initilises the objects and program for the window
     /// # Returns
-    /// `void` or an error message.
+    /// Nothing or an error message.
     pub fn init_objects(&mut self, vert: &str, frag: &str) -> Result<(), &'static str> {
         let vao_null = VertexArray::new();
         let Some(vao) = vao_null else {
@@ -98,9 +98,8 @@ impl Window {
     pub fn render_loop(&self) {
         'main_loop: loop {
             while let Some(event) = self.sdl.poll_events() {
-                match event {
-                    (Event::Quit, _) => break 'main_loop,
-                    _ => (),
+                if let (Event::Quit, _) = event {
+                    break 'main_loop;
                 }
             }
 
@@ -129,8 +128,7 @@ impl Window {
             flags |= GlContextFlags::FORWARD_COMPATIBLE;
         }
         sdl.set_gl_context_flags(flags).unwrap();
-
-        return sdl;
+        sdl
     }
 }
 
@@ -148,13 +146,12 @@ impl Default for Window {
             allow_high_dpi: true,
             borderless: false,
             resizable: false,
-            ..Default::default()
         };
 
         let win_ex = Self::new(win_args);
-        return match win_ex {
+        match win_ex {
             Ok(win) => win,
             Err(err) => panic!("{}", err),
-        };
+        }
     }
 }

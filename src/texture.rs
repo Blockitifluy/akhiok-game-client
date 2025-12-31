@@ -1,5 +1,6 @@
-use std::{fs, io};
+use std::{fs, io, ptr::null_mut};
 
+// A texture usable inside of the engine
 pub struct Texture {
     pub width: i32,
     pub height: i32,
@@ -7,28 +8,24 @@ pub struct Texture {
     pub comp: i32,
 }
 impl Texture {
-    pub fn new(path: &str) -> Result<Self, &'static str> {
-        let f_ex = fs::File::open(path);
-        let Ok(mut f) = f_ex else {
-            return Err("couldn't load file");
-        };
-
-        let mut bytes = vec![];
-
-        io::Read::read_to_end(&mut f, &mut bytes).unwrap();
-
+    /// Make a texture from a byte vector
+    /// # Arguements
+    /// - `data`: a byte vector representing a image
+    /// # Returns
+    /// A new texture
+    pub fn new(mut data: Vec<u8>) -> Self {
         let mut texture = Self {
             width: 0,
             height: 0,
-            pixels: 0 as *mut _,
+            pixels: null_mut(),
             comp: 0,
         };
 
         unsafe {
             stb_image_rust::stbi_set_flip_vertically_on_load(true as i32);
             texture.pixels = stb_image_rust::stbi_load_from_memory(
-                bytes.as_mut_ptr(),
-                bytes.len() as i32,
+                data.as_mut_ptr(),
+                data.len() as i32,
                 &mut texture.width,
                 &mut texture.height,
                 &mut texture.comp,
@@ -36,9 +33,32 @@ impl Texture {
             );
         }
 
-        Ok(texture)
+        texture
     }
 
+    /// Reads the texture file to an texture that would be usable inside the engine.
+    /// # Arguements
+    /// - `path`: the file's path
+    /// # Returns
+    /// Either:
+    /// - `Ok`: A new texture
+    /// - `Err`: An error message
+    pub fn from_file(path: &str) -> Result<Self, &'static str> {
+        let f_ex = fs::File::open(path);
+        let Ok(mut f) = f_ex else {
+            return Err("couldn't load texture");
+        };
+
+        let mut data = vec![];
+
+        if io::Read::read_to_end(&mut f, &mut data).is_err() {
+            return Err("couldn't read texture");
+        }
+
+        Ok(Self::new(data))
+    }
+
+    /// Frees the texture.
     pub fn free(self) {
         unsafe {
             stb_image_rust::c_runtime::free(self.pixels);
