@@ -1,6 +1,6 @@
 [package]
-name = "project-profen"
-version = "0.1.0"
+name = "akhiok-game-client"
+version = "0.2.0"
 edition = "2024"
 
 [dependencies]

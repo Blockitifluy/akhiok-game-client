@@ -3,6 +3,18 @@
 version = 4
 
 [[package]]
+name = "akhiok-game-client"
+version = "0.1.0"
+dependencies = [
+ "beryllium",
+ "bytemuck",
+ "mlua",
+ "ogl33",
+ "stb_image_rust",
+ "ultraviolet",
+]
+
+[[package]]
 name = "autocfg"
 version = "1.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -286,18 +298,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5ee95bc4ef87b8d5ba32e8b7714ccc834865276eab0aed5c9958d00ec45f49e8"
 dependencies = [
  "unicode-ident",
-]
-
-[[package]]
-name = "project-profen"
-version = "0.1.0"
-dependencies = [
- "beryllium",
- "bytemuck",
- "mlua",
- "ogl33",
- "stb_image_rust",
- "ultraviolet",
 ]
 
 [[package]]
