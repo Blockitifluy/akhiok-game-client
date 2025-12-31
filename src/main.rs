@@ -52,6 +52,9 @@ fn main() {
     clear_color(Color3::new(0.2, 0.3, 0.3).unwrap());
 
     win.init_objects(VERT_SHADER, FRAG_SHADER).unwrap();
+
+    let mut meshes: Vec<Mesh> = vec![];
+
     // let mesh = Mesh::load_mesh_from_file("assets/meshs/teapot.mesh").unwrap();
     let mut mesh = Mesh::with_capacity(4, 6);
     mesh.indices = vec![0, 1, 3, 1, 2, 3];
@@ -59,19 +62,26 @@ fn main() {
     mesh.add_vertex_data_pt(Vector3::new(0.5, -0.5, 0.0), Vector2::new(1.0, 0.0));
     mesh.add_vertex_data_pt(Vector3::new(-0.5, -0.5, 0.0), Vector2::new(0.0, 0.0));
     mesh.add_vertex_data_pt(Vector3::new(-0.5, 0.5, 0.0), Vector2::new(0.0, 1.0));
+    let mut mesh2 = Mesh::with_capacity(3, 3);
+    mesh2.indices = vec![0, 1, 2];
+    mesh2.add_vertex_data_pt(Vector3::new(1.0, 1.0, 0.0), Vector2::new(1.0, 1.0));
+    mesh2.add_vertex_data_pt(Vector3::new(1.0, -1.0, 0.0), Vector2::new(1.0, 0.0));
+    mesh2.add_vertex_data_pt(Vector3::new(-1.0, 0.0, 0.0), Vector2::new(0.0, 0.0));
+    meshes.push(mesh);
+    meshes.push(mesh2);
 
-    buffer_data(
-        BufferType::Array,
-        bytemuck::cast_slice(mesh.to_vertex_data_internal().as_slice()),
-        GL_STATIC_DRAW,
-    );
-
-    buffer_data(
-        BufferType::ElementArray,
-        bytemuck::cast_slice(mesh.to_indices_tri().as_slice()),
-        GL_STATIC_DRAW, // TODO: replace with GL_DYNAMIC_DRAW in the future
-    );
-
+    // buffer_data(
+    //     BufferType::Array,
+    //     bytemuck::cast_slice(mesh.to_vertex_data_internal().as_slice()),
+    //     GL_STATIC_DRAW,
+    // );
+    //
+    // buffer_data(
+    //     BufferType::ElementArray,
+    //     bytemuck::cast_slice(mesh.to_indices_tri().as_slice()),
+    //     GL_STATIC_DRAW, // TODO: replace with GL_DYNAMIC_DRAW in the future
+    // );
+    //
     let mut texture = 0;
     unsafe {
         glGenBuffers(1, &mut texture);
@@ -104,30 +114,19 @@ fn main() {
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, vertex_data_size, ptr::null());
         glEnableVertexAttribArray(0);
 
-        // color
-        glVertexAttribPointer(
-            1,
-            3,
-            GL_FLOAT,
-            GL_FALSE,
-            vertex_data_size,
-            (size_of::<[f32; 3]>()) as *const _,
-        );
-        glEnableVertexAttribArray(1);
-
         // texture
         glVertexAttribPointer(
-            2,
+            1,
             2,
             GL_FLOAT,
             GL_FALSE,
             vertex_data_size,
-            size_of::<[f32; 6]>() as *const _,
+            size_of::<[f32; 3]>() as *const _,
         );
-        glEnableVertexAttribArray(2);
+        glEnableVertexAttribArray(1);
     }
 
     polygon_mode(gl_helper::PolygonMode::Fill);
-    win.render_loop();
+    win.render_loop(&meshes);
     win.shader_program.delete();
 }

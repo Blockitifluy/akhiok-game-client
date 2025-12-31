@@ -1,23 +1,15 @@
 use std::{default::Default, fs, io::Read, vec::*};
 
-use crate::datatypes::{color::*, vectors::*};
+use crate::datatypes::vectors::*;
 
-pub type VertexDataInternal = [f32; 8];
+pub type VertexDataInternal = [f32; 5];
 pub type TriIndexes = [u32; 3];
 
 /// `VertexData` used to construct points on meshes, containing:
-/// - `position`,
-/// - `color` and
-/// - `tex_coord`
+/// - `position` (the first 3 fields),
+/// - `tex_coord` (the next 2 fields)
 #[derive(Clone, Copy, Debug, Default)]
-pub struct VertexData {
-    /// The vertex's position
-    pub position: Vector3,
-    /// The vertex color
-    pub color: Color3,
-    /// the UV coordinates of the texture
-    pub tex_coord: Vector2,
-}
+pub struct VertexData(f32, f32, f32, f32, f32);
 impl VertexData {
     /// Creates a new vertex.
     /// # Arguements:
@@ -26,31 +18,48 @@ impl VertexData {
     /// - `tex_coord` - the UV coordinates of the texture
     /// # Returns
     /// `VertexData`
-    pub fn new(position: Vector3, color: Color3, tex_coord: Vector2) -> Self {
-        Self {
-            position,
-            color,
-            tex_coord,
-        }
+    pub fn new(position: Vector3, tex_coord: Vector2) -> Self {
+        Self(position.x, position.y, position.z, tex_coord.x, tex_coord.y)
+    }
+
+    /// Gets the position of the vertex.
+    /// # Returns
+    /// The vertex's position
+    pub fn get_position(&self) -> Vector3 {
+        Vector3::new(self.0, self.1, self.2)
+    }
+
+    /// Sets the position of the vertex.
+    /// # Arguements
+    /// - `pos`: the new position
+    pub fn set_position(&mut self, pos: Vector3) {
+        self.0 = pos.x;
+        self.1 = pos.y;
+        self.2 = pos.z;
+    }
+
+    /// Gets the texture coordinate of the vertex.
+    /// # Returns
+    /// The vertex's texture coordinate
+    pub fn get_tex_coord(&self) -> Vector2 {
+        Vector2::new(self.3, self.4)
+    }
+
+    /// Sets the texture coordinate of the vertex.
+    /// # Arguements
+    /// - `coord`: The new texture coordinate
+    pub fn set_tex_coord(&mut self, coord: Vector2) {
+        self.3 = coord.x;
+        self.4 = coord.y;
     }
 
     /// Converts the vertex into an array of `f32`.
     /// # Returns
     /// A `f32` array with the following elements:
     /// - `position` (3),
-    /// - `color` (3, normalised),
     /// - `tex_coord` (2)
     pub fn to_internal(&self) -> VertexDataInternal {
-        [
-            self.position.x,
-            self.position.y,
-            self.position.z,
-            self.color.r,
-            self.color.g,
-            self.color.b,
-            self.tex_coord.x,
-            self.tex_coord.y,
-        ]
+        [self.0, self.1, self.2, self.3, self.4]
     }
 }
 
@@ -58,7 +67,6 @@ impl VertexData {
 enum MeshSectionType {
     Vertices,
     Indices,
-    Color,
     TexCoord,
     None,
 }
@@ -96,7 +104,6 @@ impl Mesh {
     const SECTION_START_SYMBOL: char = ':';
     const VERTICES_SECTION_NAME: &str = "Vertices";
     const INDICES_SECTION_NAME: &str = "Indices";
-    const COLOR_SECTION_NAME: &str = "Color";
     const TEXCOORD_SECTION_NAME: &str = "TexCoord";
 
     fn load_raw_vertices(inp: &str, out: &mut Vec<Vector3>) -> Result<(), String> {
@@ -185,47 +192,6 @@ impl Mesh {
         Ok(())
     }
 
-    fn load_raw_color(inp: &str, out: &mut Vec<Color3>) -> Result<(), String> {
-        let mut swap: u8 = 0; // 0 is r, 1 is b and 2 is g
-        let (mut r, mut g) = (0, 0); // b is not need
-        let mut num_b = String::with_capacity(8);
-
-        for (i, c) in inp.chars().enumerate() {
-            // only values allowed: numbers, '.', '-' and whitespace
-            let is_whitespace = c.is_whitespace();
-            let is_valid_num = c == '.' || c == '-' || c.is_numeric();
-            if !is_whitespace && !is_valid_num {
-                return Err(format!("invalid data in color: invalid character at {}", i));
-            }
-
-            if is_whitespace && !num_b.is_empty() {
-                // compute
-                let v_ex = num_b.parse::<u8>();
-                let Ok(v) = v_ex else {
-                    return Err(format!(
-                        "couldn't parse value at {}: invalid integer value ({})",
-                        i, num_b
-                    ));
-                };
-                match swap {
-                    0 => r = v,
-                    1 => g = v,
-                    2 => {
-                        out.push(Color3::from_rgb(r, g, v));
-                    }
-                    _ => panic!("internal error: swap not between 0 and 2"),
-                }
-
-                num_b.clear();
-                swap = (swap + 1) % 3;
-            } else {
-                num_b.push(c);
-            }
-        }
-
-        Ok(())
-    }
-
     fn load_raw_indices(inp: &str, out: &mut Vec<u32>) -> Result<(), String> {
         let mut num_b = String::with_capacity(8);
 
@@ -277,7 +243,6 @@ impl Mesh {
 
         let mut pos_data = Vec::<Vector3>::with_capacity(512);
         let mut ind_data = Vec::<u32>::with_capacity(128);
-        let mut color_data = Vec::<Color3>::with_capacity(512);
         let mut texcoord_data = Vec::<Vector2>::with_capacity(512);
 
         for c in b.chars() {
@@ -290,9 +255,6 @@ impl Mesh {
                         }
                         MeshSectionType::Indices => {
                             Self::load_raw_indices(data.as_str(), &mut ind_data)
-                        }
-                        MeshSectionType::Color => {
-                            Self::load_raw_color(data.as_str(), &mut color_data)
                         }
                         MeshSectionType::TexCoord => {
                             Self::load_raw_texcoord(data.as_str(), &mut texcoord_data)
@@ -317,7 +279,6 @@ impl Mesh {
                         match section_name.as_str() {
                             Self::VERTICES_SECTION_NAME => MeshSectionType::Vertices,
                             Self::INDICES_SECTION_NAME => MeshSectionType::Indices,
-                            Self::COLOR_SECTION_NAME => MeshSectionType::Color,
                             Self::TEXCOORD_SECTION_NAME => MeshSectionType::TexCoord,
                             _ => MeshSectionType::None,
                         }
@@ -337,7 +298,6 @@ impl Mesh {
             let res = match current_section {
                 MeshSectionType::Vertices => Self::load_raw_vertices(data.as_str(), &mut pos_data),
                 MeshSectionType::Indices => Self::load_raw_indices(data.as_str(), &mut ind_data),
-                MeshSectionType::Color => Self::load_raw_color(data.as_str(), &mut color_data),
                 MeshSectionType::TexCoord => {
                     Self::load_raw_texcoord(data.as_str(), &mut texcoord_data)
                 }
@@ -353,11 +313,6 @@ impl Mesh {
         for (i, pos) in pos_data.iter().enumerate() {
             vertex_data.push(VertexData::new(
                 *pos,
-                *color_data.get(i).unwrap_or(&Color3 {
-                    r: 0.0,
-                    g: 0.0,
-                    b: 0.0,
-                }),
                 *texcoord_data.get(i).unwrap_or(&Vector2::new(0.0, 0.0)),
             ));
         }
@@ -399,19 +354,9 @@ impl Mesh {
     /// Adds a vertex to the mesh.
     /// # Arguements
     /// - `position`: the position of the vertex
-    /// - `color`: the vertex color
-    /// - `tex_coord`: the UV coordinates of the texture
-    pub fn add_vertex_data_pct(&mut self, position: Vector3, color: Color3, tex_coord: Vector2) {
-        let vd = VertexData::new(position, color, tex_coord);
-        self.add_vertex_data(vd)
-    }
-
-    /// Adds a vertex to the mesh.
-    /// # Arguements
-    /// - `position`: the position of the vertex
     /// - `tex_coord`: the UV coordinates of the texture
     pub fn add_vertex_data_pt(&mut self, position: Vector3, tex_coord: Vector2) {
-        let vd = VertexData::new(position, Color3::new(1.0, 1.0, 1.0).unwrap(), tex_coord);
+        let vd = VertexData::new(position, tex_coord);
         self.add_vertex_data(vd);
     }
 

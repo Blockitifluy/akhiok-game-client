@@ -1,3 +1,5 @@
+use std::ptr;
+
 use beryllium::{
     events::Event,
     init::InitFlags,
@@ -5,10 +7,9 @@ use beryllium::{
     *,
 };
 use ogl33::*;
-use std::ptr;
 use ultraviolet::Mat4;
 
-use crate::gl_helper::*;
+use crate::{gl_helper::*, mesh::Mesh};
 
 /// A wrapper for `GlWindow`, shader program and multiple GL objects:
 /// - `vao`,
@@ -76,7 +77,8 @@ impl Window {
         ebo.bind(BufferType::ElementArray);
         self.ebo = ebo;
 
-        let shader_program_ex = ShaderProgram::from_vert_frag_file(vert, frag);
+        let shader_program_ex =
+            ShaderProgram::from_vert_frag_file(vert, frag).inspect_err(|e| println!("{}", e));
         let Ok(shader_program) = shader_program_ex else {
             return Err("couldn't make shader program");
         };
@@ -95,7 +97,7 @@ impl Window {
     /// Executes the render loop
     /// # Note
     /// The loop doesn't run in a different thread
-    pub fn render_loop(&self) {
+    pub fn render_loop(&self, meshes: &Vec<Mesh>) {
         'main_loop: loop {
             while let Some(event) = self.sdl.poll_events() {
                 if let (Event::Quit, _) = event {
@@ -106,9 +108,30 @@ impl Window {
             unsafe {
                 glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
                 self.shader_program
-                    .set_matrix4("transform\0", Mat4::from_rotation_z(90.0_f32));
-                glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, ptr::null());
+                    .set_matrix4("transform\0", Mat4::identity());
+
+                for msh in meshes {
+                    buffer_data(
+                        BufferType::Array,
+                        bytemuck::cast_slice(msh.to_vertex_data_internal().as_slice()),
+                        GL_DYNAMIC_DRAW,
+                    );
+                    buffer_data(
+                        BufferType::ElementArray,
+                        bytemuck::cast_slice(msh.indices.as_slice()),
+                        GL_DYNAMIC_DRAW,
+                    );
+
+                    glDrawElements(
+                        GL_TRIANGLES,
+                        msh.indices.len() as i32,
+                        GL_UNSIGNED_INT,
+                        ptr::null(),
+                    );
+                    self.shader_program.use_program();
+                }
             }
+
             self.window.swap_window();
         }
     }
