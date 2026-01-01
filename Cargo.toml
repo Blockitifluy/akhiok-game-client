@@ -4,10 +4,11 @@ version = "0.2.0"
 edition = "2024"
 
 [dependencies]
-mlua = { version = "0.11.5", features = ["lua54", "vendored"]}
+mlua = { version = "0.11.5", features = ["lua54", "vendored"] }
 bytemuck = "1"
 ultraviolet = "0.7"
 beryllium = "0.13.3"
-ogl33 = { version = "0.2", features = ["debug_error_checks"]}
+ogl33 = { version = "0.2", features = ["debug_error_checks"] }
 stb_image_rust = "2.27.2"
+uuid = { version ="1.19.0", features = ["v4"] }
 

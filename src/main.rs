@@ -17,6 +17,7 @@ use beryllium::video::{CreateWinArgs, GlSwapInterval};
 use core::{convert::TryInto, mem::size_of};
 use ogl33::*;
 use std::ptr;
+use std::rc::Rc;
 
 use crate::datatypes::color::Color3;
 use crate::datatypes::vectors::Vector2;
@@ -61,14 +62,18 @@ fn main() {
 
     win.init_objects(VERT_SHADER, FRAG_SHADER).unwrap();
 
-    let game_entity = Entity::new(
+    let game_entity = Rc::new(Entity::new(
         "Game",
         EntityType::Game(Box::new(GameType {
             genre: entities::entity::GameGenre::Action,
         })),
-    );
+        None,
+    ));
     let entity_tree = EntityTree { head: game_entity };
     println!("{}", entity_tree.head);
+
+    let mut base_entity = Entity::new("new-entity", EntityType::Base, None);
+    base_entity.set_parent(Some(entity_tree.head)).unwrap();
 
     let mut meshes: Vec<Mesh> = vec![];
 
