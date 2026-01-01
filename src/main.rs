@@ -7,6 +7,10 @@ pub mod datatypes {
     pub mod color;
     pub mod vectors;
 }
+pub mod entities {
+    pub mod entity;
+    pub mod entity_tree;
+}
 pub mod window;
 
 use beryllium::video::{CreateWinArgs, GlSwapInterval};
@@ -17,6 +21,10 @@ use std::ptr;
 use crate::datatypes::color::Color3;
 use crate::datatypes::vectors::Vector2;
 use crate::datatypes::vectors::Vector3;
+use crate::entities::entity::Entity;
+use crate::entities::entity::EntityType;
+use crate::entities::entity::GameType;
+use crate::entities::entity_tree::EntityTree;
 use crate::gl_helper::*;
 use crate::mesh::*;
 use crate::texture::*;
@@ -53,6 +61,15 @@ fn main() {
 
     win.init_objects(VERT_SHADER, FRAG_SHADER).unwrap();
 
+    let game_entity = Entity::new(
+        "Game",
+        EntityType::Game(Box::new(GameType {
+            genre: entities::entity::GameGenre::Action,
+        })),
+    );
+    let entity_tree = EntityTree { head: game_entity };
+    println!("{}", entity_tree.head);
+
     let mut meshes: Vec<Mesh> = vec![];
 
     // let mesh = Mesh::load_mesh_from_file("assets/meshs/teapot.mesh").unwrap();
@@ -70,18 +87,6 @@ fn main() {
     meshes.push(mesh);
     meshes.push(mesh2);
 
-    // buffer_data(
-    //     BufferType::Array,
-    //     bytemuck::cast_slice(mesh.to_vertex_data_internal().as_slice()),
-    //     GL_STATIC_DRAW,
-    // );
-    //
-    // buffer_data(
-    //     BufferType::ElementArray,
-    //     bytemuck::cast_slice(mesh.to_indices_tri().as_slice()),
-    //     GL_STATIC_DRAW, // TODO: replace with GL_DYNAMIC_DRAW in the future
-    // );
-    //
     let mut texture = 0;
     unsafe {
         glGenBuffers(1, &mut texture);
