@@ -20,8 +20,6 @@ use std::ptr;
 use std::rc::Rc;
 
 use crate::datatypes::color::Color3;
-use crate::datatypes::vectors::Vector2;
-use crate::datatypes::vectors::Vector3;
 use crate::entities::entity::Entity;
 use crate::entities::entity::EntityType;
 use crate::entities::entity::GameType;
@@ -77,18 +75,8 @@ fn main() {
 
     let mut meshes: Vec<Mesh> = vec![];
 
-    // let mesh = Mesh::load_mesh_from_file("assets/meshs/teapot.mesh").unwrap();
-    let mut mesh = Mesh::with_capacity(4, 6);
-    mesh.indices = vec![0, 1, 3, 1, 2, 3];
-    mesh.add_vertex_data_pt(Vector3::new(0.5, 0.5, 0.0), Vector2::new(1.0, 1.0));
-    mesh.add_vertex_data_pt(Vector3::new(0.5, -0.5, 0.0), Vector2::new(1.0, 0.0));
-    mesh.add_vertex_data_pt(Vector3::new(-0.5, -0.5, 0.0), Vector2::new(0.0, 0.0));
-    mesh.add_vertex_data_pt(Vector3::new(-0.5, 0.5, 0.0), Vector2::new(0.0, 1.0));
-    let mut mesh2 = Mesh::with_capacity(3, 3);
-    mesh2.indices = vec![0, 1, 2];
-    mesh2.add_vertex_data_pt(Vector3::new(1.0, 1.0, 0.0), Vector2::new(1.0, 1.0));
-    mesh2.add_vertex_data_pt(Vector3::new(1.0, -1.0, 0.0), Vector2::new(1.0, 0.0));
-    mesh2.add_vertex_data_pt(Vector3::new(-1.0, 0.0, 0.0), Vector2::new(0.0, 0.0));
+    let mesh = Mesh::load_mesh_from_file("assets/meshs/plane.mesh").unwrap();
+    let mesh2 = Mesh::load_mesh_from_file("assets/meshs/triangle.mesh").unwrap();
     meshes.push(mesh);
     meshes.push(mesh2);
 
