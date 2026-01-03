@@ -15,8 +15,6 @@ use ogl33::*;
 use std::ptr;
 
 use crate::datatypes::color::Color3;
-use crate::datatypes::vectors::Vector2;
-use crate::datatypes::vectors::Vector3;
 use crate::gl_helper::*;
 use crate::mesh::*;
 use crate::texture::*;
@@ -55,33 +53,11 @@ fn main() {
 
     let mut meshes: Vec<Mesh> = vec![];
 
-    // let mesh = Mesh::load_mesh_from_file("assets/meshs/teapot.mesh").unwrap();
-    let mut mesh = Mesh::with_capacity(4, 6);
-    mesh.indices = vec![0, 1, 3, 1, 2, 3];
-    mesh.add_vertex_data_pt(Vector3::new(0.5, 0.5, 0.0), Vector2::new(1.0, 1.0));
-    mesh.add_vertex_data_pt(Vector3::new(0.5, -0.5, 0.0), Vector2::new(1.0, 0.0));
-    mesh.add_vertex_data_pt(Vector3::new(-0.5, -0.5, 0.0), Vector2::new(0.0, 0.0));
-    mesh.add_vertex_data_pt(Vector3::new(-0.5, 0.5, 0.0), Vector2::new(0.0, 1.0));
-    let mut mesh2 = Mesh::with_capacity(3, 3);
-    mesh2.indices = vec![0, 1, 2];
-    mesh2.add_vertex_data_pt(Vector3::new(1.0, 1.0, 0.0), Vector2::new(1.0, 1.0));
-    mesh2.add_vertex_data_pt(Vector3::new(1.0, -1.0, 0.0), Vector2::new(1.0, 0.0));
-    mesh2.add_vertex_data_pt(Vector3::new(-1.0, 0.0, 0.0), Vector2::new(0.0, 0.0));
+    let mesh = Mesh::load_mesh_from_file("assets/meshs/plane.mesh").unwrap();
+    let mesh2 = Mesh::load_mesh_from_file("assets/meshs/triangle.mesh").unwrap();
     meshes.push(mesh);
     meshes.push(mesh2);
 
-    // buffer_data(
-    //     BufferType::Array,
-    //     bytemuck::cast_slice(mesh.to_vertex_data_internal().as_slice()),
-    //     GL_STATIC_DRAW,
-    // );
-    //
-    // buffer_data(
-    //     BufferType::ElementArray,
-    //     bytemuck::cast_slice(mesh.to_indices_tri().as_slice()),
-    //     GL_STATIC_DRAW, // TODO: replace with GL_DYNAMIC_DRAW in the future
-    // );
-    //
     let mut texture = 0;
     unsafe {
         glGenBuffers(1, &mut texture);
