@@ -151,7 +151,6 @@ impl EntityTree {
     // borrow checker
     // Genuinly the first time I have gotten this angry
     // If this is the reason why I don't a job so be it
-    // WHY THE FUCK DOES USING THIS * ON A VEC RETURN A FUCKING SLICE
     // New contender on worst programming language?
     // Favourite thing in this project is not coding for days only design because I feel like Sir
     // Francis Drake the way I am circumnavgating the borrow checker
@@ -202,10 +201,6 @@ impl EntityTree {
         }
         descendents
     }
-
-    // Rust has to be the worst programming languages of all time
-    // why the fuck does this not work
-    // death to borrow checker
 
     pub fn get_descendents_mut(&mut self, entity: &Entity) -> Vec<RefMut<Entity>> {
         let descendents_id = self.get_descendents_id(entity);
