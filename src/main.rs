@@ -17,12 +17,9 @@ use beryllium::video::{CreateWinArgs, GlSwapInterval};
 use core::{convert::TryInto, mem::size_of};
 use ogl33::*;
 use std::ptr;
-use std::rc::Rc;
 
 use crate::datatypes::color::Color3;
-use crate::entities::entity::Entity;
 use crate::entities::entity::EntityType;
-use crate::entities::entity::GameType;
 use crate::entities::entity_tree::EntityTree;
 use crate::gl_helper::*;
 use crate::mesh::*;
@@ -60,18 +57,14 @@ fn main() {
 
     win.init_objects(VERT_SHADER, FRAG_SHADER).unwrap();
 
-    let game_entity = Rc::new(Entity::new(
-        "Game",
-        EntityType::Game(Box::new(GameType {
-            genre: entities::entity::GameGenre::Action,
-        })),
-        None,
-    ));
-    let entity_tree = EntityTree { head: game_entity };
-    println!("{}", entity_tree.head);
+    let mut entity_tree = EntityTree::default();
+    let head = entity_tree.add_head();
+    println!("{}", head.borrow().get_uuid());
 
-    let mut base_entity = Entity::new("new-entity", EntityType::Base, None);
-    base_entity.set_parent(Some(entity_tree.head)).unwrap();
+    let base_entity = entity_tree.add_entity("new-entity", EntityType::Base);
+    entity_tree
+        .set_parent(base_entity.borrow_mut(), Some(head.borrow_mut()))
+        .unwrap();
 
     let mut meshes: Vec<Mesh> = vec![];
 
