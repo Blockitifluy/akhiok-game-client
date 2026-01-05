@@ -1,3 +1,4 @@
+//! Adds many utility functions and types to help with rendering
 use std::fs;
 
 use ogl33::*;
@@ -38,7 +39,9 @@ impl VertexArray {
 
 /// The type of `Shader`
 pub enum ShaderType {
+    /// Vertex Shader
     Vertex = GL_VERTEX_SHADER as isize,
+    /// Fragment Shader
     Fragment = GL_FRAGMENT_SHADER as isize,
 }
 
@@ -305,8 +308,11 @@ impl ShaderProgram {
 /// The polygon that GL is rendering with.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PolygonMode {
+    /// GL_POINT
     Point = GL_POINT as isize,
+    /// GL_LINE
     Line = GL_LINE as isize,
+    /// GL_FILL
     Fill = GL_FILL as isize,
 }
 
@@ -320,7 +326,9 @@ pub fn polygon_mode(mode: PolygonMode) {
 /// The type of `Buffer` object.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum BufferType {
+    /// GL_ARRAY_BUFFER
     Array = GL_ARRAY_BUFFER as isize,
+    /// GL_ELEMENT_ARRAY_BUFFER
     ElementArray = GL_ELEMENT_ARRAY_BUFFER as isize,
 }
 

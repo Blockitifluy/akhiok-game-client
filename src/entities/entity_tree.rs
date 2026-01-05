@@ -1,3 +1,5 @@
+//! Contains the `EntityTree` struct used for the entity heirarchry.
+
 use std::{
     cell::{Ref, RefCell, RefMut},
     collections::HashMap,
@@ -9,12 +11,22 @@ use uuid::Uuid;
 
 use crate::entities::entity::{Entity, EntityType, GameGenre, GameType};
 
+/// A tree of entities.
+/// Queries by a `HashMap` and `Uuid`s.
 #[derive(Debug, Default)]
 pub struct EntityTree {
+    /// The identitier of the head (usually `GameType`).
+    /// Can be `None`.
     pub head: Option<Uuid>,
     entity_map: HashMap<Uuid, Rc<RefCell<Entity>>>,
 }
 impl EntityTree {
+    /// Creates a new entity.
+    /// # Arguements
+    /// - `name`: The name of the entity
+    /// - `entity_type`: The `EntityType` of the entity
+    /// # Returns
+    /// A reference counted RefCell of the `Entity`.
     pub fn add_entity(&mut self, name: &str, entity_type: EntityType) -> Rc<RefCell<Entity>> {
         let entity = Rc::new(RefCell::new(Entity::new(name, entity_type)));
         let id = entity.borrow().get_uuid();
@@ -22,6 +34,33 @@ impl EntityTree {
         entity
     }
 
+    /// Creates a new entity, that is initally parented to another entity.
+    /// # Arguements
+    /// - `name`: The name of the entity
+    /// - `entity_type`: The `EntityType` of the entity
+    /// - `parent`: A mutable reference of the entity
+    /// # Returns
+    /// A result where it could be either:
+    /// - A reference counted RefCell of the `Entity`.
+    /// - An error message
+    pub fn add_entity_with_parent(
+        &mut self,
+        name: &str,
+        entity_type: EntityType,
+        parent: RefMut<Entity>,
+    ) -> Result<Rc<RefCell<Entity>>, &'static str> {
+        let entity = self.add_entity(name, entity_type);
+        let entity_borrow = entity.borrow_mut();
+        let res = self.set_parent(entity_borrow, Some(parent));
+        if let Err(err) = res {
+            return Err(err);
+        }
+        Ok(entity)
+    }
+
+    /// Adds a new head of the `Game` entity type.
+    /// # Returns
+    /// A reference counted RefCell of the `Entity`.
     pub fn add_head(&mut self) -> Rc<RefCell<Entity>> {
         let head = Rc::new(RefCell::new(Entity::new(
             "Game",
@@ -36,6 +75,24 @@ impl EntityTree {
         head.clone()
     }
 
+    /// Gets the head of the entity type.
+    /// # Returns
+    /// An option of a reference counted RefCell of the `Entity`.
+    pub fn get_head(&self) -> Option<Rc<RefCell<Entity>>> {
+        let head_id = self.head?;
+
+        Some(self.entity_map[&head_id].clone())
+    }
+
+    // SUGGESTION: get_entity and it's variants should return a result when borrowing is
+    // unsuccessful
+    // SUGGESTION: get_entity_refcell
+
+    /// Gets an entity based on the `id`.
+    /// # Arguements
+    /// - `id`: The unique indentifier of the entity
+    /// # Returns
+    /// An option to a reference to an entity
     pub fn get_entity(&self, id: Uuid) -> Option<Ref<Entity>> {
         let entity_null = self.entity_map.get(&id);
         if let Some(entity) = entity_null {
@@ -44,6 +101,11 @@ impl EntityTree {
         None
     }
 
+    /// Gets an entity (as an mutable reference) based on the `id`.
+    /// # Arguements
+    /// - `id`: The unique indentifier of the entity
+    /// # Returns
+    /// An option to a mutable reference to an entity
     pub fn get_entity_mut(&self, id: Uuid) -> Option<RefMut<Entity>> {
         let entity_null = self.entity_map.get(&id);
         if let Some(entity) = entity_null {
@@ -54,6 +116,11 @@ impl EntityTree {
 
     // Parent
 
+    /// Gets an entity's parent.
+    /// # Arguements
+    /// - `entity`: a borrow of an entity
+    /// # Returns
+    /// An option to a reference of an entity
     pub fn get_parent(&self, entity: &Entity) -> Option<Ref<Entity>> {
         let id = entity.parent_id?;
 
@@ -65,6 +132,11 @@ impl EntityTree {
         None
     }
 
+    /// Gets an entity's parent as a mutable reference.
+    /// # Arguements
+    /// - `entity`: a borrow of an entity
+    /// # Returns
+    /// An option to a reference of an entity
     pub fn get_parent_mut(&mut self, entity: &Entity) -> Option<RefMut<Entity>> {
         let id = entity.parent_id?;
 
@@ -80,6 +152,12 @@ impl EntityTree {
         None
     }
 
+    /// Sets the parent to an entity. Can be unsuccessful.
+    /// # Arguements
+    /// - `entity`: An mutable reference to an entity
+    /// - `parent`: A entity used as `entity`'s new parent
+    /// # Returns
+    /// An error message if a parent was unsuccessful.
     pub fn set_parent(
         &mut self,
         mut entity: RefMut<Entity>,
@@ -127,6 +205,11 @@ impl EntityTree {
 
     // Children
 
+    /// Gets an entity's children.
+    /// # Arguements
+    /// - `entity`: An entity
+    /// # Returns
+    /// A collection of references to an entity
     pub fn get_children(&self, entity: &Entity) -> Vec<Ref<Entity>> {
         let mut children = Vec::with_capacity(16);
 
@@ -158,6 +241,11 @@ impl EntityTree {
     // Fuck it reinventing the Von Newman Archietchure just to avoid this abombination of a
     // language
 
+    /// Gets an entity's children as an mutable reference to an entity.
+    /// # Arguements
+    /// - `entity`: An entity
+    /// # Returns
+    /// A collection of mutable references to an entity
     pub fn get_children_mut(&mut self, entity: &Entity) -> Vec<RefMut<Entity>> {
         let mut children: Vec<RefMut<Entity>> = Vec::with_capacity(entity.children_id.len());
 
@@ -170,6 +258,11 @@ impl EntityTree {
         children
     }
 
+    /// Gets an entity's descendent as identitiers.
+    /// # Arguement
+    /// - `entity`: A borrow of an entity
+    /// # Retutrns
+    /// A collection of IDs representing the entity's descendent.
     pub fn get_descendents_id(&self, entity: &Entity) -> Vec<Uuid> {
         let mut descendents = self.get_children(entity);
         let mut stack_rel: Vec<Uuid> = descendents.iter().map(|e| e.get_uuid()).collect();
@@ -185,10 +278,14 @@ impl EntityTree {
             stack_rel.append(&mut children);
             descendents.push(ent);
         }
-
         stack_rel
     }
 
+    /// Gets an entity's descendents as a reference.
+    /// # Arguement
+    /// - `entity`: A borrow of an entity
+    /// # Returns
+    /// A collection of entities.
     pub fn get_descendents(&self, entity: &Entity) -> Vec<Ref<Entity>> {
         let descendents_id = self.get_descendents_id(entity);
         let mut descendents: Vec<Ref<Entity>> = Vec::with_capacity(descendents_id.len());
@@ -202,6 +299,11 @@ impl EntityTree {
         descendents
     }
 
+    /// Getsa an entity's descendents as an mutable reference.
+    /// # Arguements
+    /// - `entity`: A borrow of an entity
+    /// # Returns
+    /// A collection of entities as mutable references.
     pub fn get_descendents_mut(&mut self, entity: &Entity) -> Vec<RefMut<Entity>> {
         let descendents_id = self.get_descendents_id(entity);
         let mut descendents: Vec<RefMut<Entity>> = Vec::with_capacity(descendents_id.len());
@@ -212,7 +314,6 @@ impl EntityTree {
                 descendents.push(decend);
             }
         }
-
         descendents
     }
 }

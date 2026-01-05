@@ -1,9 +1,11 @@
+//! Used for mesh creation and definition.
+
 use std::{default::Default, fs, io::Read, vec::*};
 
 use crate::datatypes::vectors::*;
 
+/// An array of floats used in rendering vertices.
 pub type VertexDataInternal = [f32; 5];
-pub type TriIndexes = [u32; 3];
 
 /// `VertexData` used to construct points on meshes, containing:
 /// - `position` (the first 3 fields),
@@ -71,9 +73,14 @@ enum MeshSectionType {
     None,
 }
 
+/// A collection of veretices and indices that defines the shape of  a object's surface,
 #[derive(Clone, Debug)]
 pub struct Mesh {
+    /// A vector of 3D points and other vector data.
     pub vertices: Vec<VertexData>,
+    /// A vector of indices.
+    /// # Example
+    /// `[0, 1, 3, 1, 2, 3]`
     pub indices: Vec<u32>,
 }
 impl Mesh {
@@ -379,27 +386,5 @@ impl Mesh {
     /// The conveted indices
     pub fn to_vertex_data_internal(&self) -> Vec<VertexDataInternal> {
         self.vertices.iter().map(|v| v.to_internal()).collect()
-    }
-
-    /// Converts the indices into pairs of 3.
-    /// # Returns
-    /// Indices seperated into 3 pairs
-    pub fn to_indices_tri(&self) -> Vec<TriIndexes> {
-        let mut tri = Vec::<TriIndexes>::with_capacity(self.indices.len() / 3);
-        let mut swap = 0_u8;
-        let (mut a, mut b) = (0_u32, 0_u32);
-
-        for index in &self.indices {
-            match swap {
-                0 => a = *index,
-                1 => b = *index,
-                2 => {
-                    tri.push([a, b, *index]);
-                }
-                _ => panic!("internal error: swap out of range"),
-            }
-            swap = (swap + 1) % 3;
-        }
-        tri
     }
 }

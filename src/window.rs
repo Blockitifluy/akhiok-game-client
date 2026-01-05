@@ -1,3 +1,5 @@
+//! Used for the `Window` helper structure. Containing various GL objects.
+
 use std::ptr;
 
 use beryllium::{
@@ -22,8 +24,11 @@ pub struct Window {
     pub vbo: Buffer,
     /// Element Buffer Object
     pub ebo: Buffer,
+    /// The shader program used in GL.
     pub shader_program: ShaderProgram,
+    /// Simple DirectMedia Layer
     pub sdl: Sdl,
+    /// The GL window
     pub window: GlWindow,
 }
 impl Window {
@@ -86,7 +91,10 @@ impl Window {
         Ok(())
     }
 
-    pub fn delete(&self) {
+    /// Deletes the window.
+    ///
+    /// Comsumes `self`.
+    pub fn delete(self) {
         unsafe {
             glDeleteVertexArrays(1, self.vao.0 as *const _);
             glDeleteBuffers(1, self.vbo.0 as *const _);

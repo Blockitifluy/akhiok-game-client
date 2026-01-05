@@ -1,12 +1,18 @@
+//! Defines datatypes for colors. Stores:
+//! - `Color3`: *RGB*
 use std::fmt;
 
+/// The floating point type used for a color's components
 pub type ColorComp = f32;
 
 /// A color with the components of red, green and blue, all between the values of 0.0 and 1.0
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Color3 {
+    /// Red component of the color
     pub r: ColorComp,
+    /// Green component of the color
     pub g: ColorComp,
+    /// Blue component of the color
     pub b: ColorComp,
 }
 

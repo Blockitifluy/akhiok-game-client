@@ -1,10 +1,15 @@
+//! Used for the creation and defination of textures. Used in rendering images on meshes.
 use std::{fs, io, ptr::null_mut};
 
-// A texture usable inside of the engine
+/// A texture usable inside of the engine.
 pub struct Texture {
+    /// The images's width
     pub width: i32,
+    /// The image's height
     pub height: i32,
+    /// The image data
     pub pixels: *mut u8,
+    /// The colour space of the image
     pub comp: i32,
 }
 impl Texture {
