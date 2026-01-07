@@ -1,10 +1,9 @@
 //! Contains the `Entity`, `EntityType` and many critial entity types, such as: `GameType`.
 
 use std::{fmt, str::FromStr};
-
 use uuid::Uuid;
 
-use crate::mesh::Mesh;
+use crate::entities::part_type::PartType;
 
 /// The type of entity.
 /// The enum stores a `Box` pointer to a struct
@@ -117,12 +116,4 @@ pub enum GameGenre {
 pub struct GameType {
     /// The game genre
     pub genre: GameGenre,
-}
-
-/// The part entity type.
-/// Used as a building block.
-#[derive(Debug)]
-pub struct PartType {
-    /// The mesh of the part
-    pub mesh: Mesh,
 }

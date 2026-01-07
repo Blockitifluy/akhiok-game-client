@@ -18,6 +18,8 @@ pub struct EntityTree {
     /// The identitier of the head (usually `GameType`).
     /// Can be `None`.
     pub head: Option<Uuid>,
+    /// The indentifier for every part.
+    pub parts: Vec<Uuid>,
     entity_map: HashMap<Uuid, Rc<RefCell<Entity>>>,
 }
 impl EntityTree {
@@ -31,6 +33,9 @@ impl EntityTree {
         let entity = Rc::new(RefCell::new(Entity::new(name, entity_type)));
         let id = entity.borrow().get_uuid();
         self.entity_map.insert(id, entity.clone());
+        if let EntityType::Part(_) = entity.borrow().get_type() {
+            self.parts.push(id);
+        }
         entity
     }
 
@@ -201,6 +206,67 @@ impl EntityTree {
         entity_mut.parent_id = Some(new_id);
         entity_mut.children_id.push(new_id);
         Ok(())
+    }
+
+    // Ancestors
+
+    /// Gets an entity's ancestors.
+    /// # Arguements
+    /// - `entity`: An entity
+    /// # Returns
+    /// A collection of `uuid`s referencing an entity
+    pub fn get_ancestors_id(&self, entity: &Entity) -> Vec<Uuid> {
+        let mut parent;
+        let mut current = entity;
+        let mut ancestors = Vec::<Uuid>::with_capacity(16);
+
+        while current.parent_id.is_some() {
+            let parent_id_null = entity.parent_id;
+            let Some(parent_id) = parent_id_null else {
+                break;
+            };
+
+            parent = self.get_parent(entity).unwrap();
+            current = &parent;
+            ancestors.push(parent_id);
+        }
+
+        ancestors.shrink_to_fit();
+        ancestors
+    }
+
+    /// Gets an entity's ancestors as mutable references.
+    /// # Arguements
+    /// - `entity`: An entity
+    /// # Returns
+    /// A collection of a mutable reference to an entity
+    pub fn get_ancestors_mut(&self, entity: &Entity) -> Vec<RefMut<Entity>> {
+        let ancestors_id = self.get_ancestors_id(entity);
+        let mut ancestors = Vec::with_capacity(16);
+
+        for id in ancestors_id {
+            let entity = self.get_entity_mut(id).unwrap();
+            ancestors.push(entity);
+        }
+        ancestors.shrink_to_fit();
+        ancestors
+    }
+
+    /// Gets an entity's ancestors as immutable references.
+    /// # Arguements
+    /// - `entity`: An entity
+    /// # Returns
+    /// A collection of a immutable reference to an entity
+    pub fn get_ancestors(&self, entity: &Entity) -> Vec<Ref<Entity>> {
+        let ancestors_id = self.get_ancestors_id(entity);
+        let mut ancestors = Vec::with_capacity(16);
+
+        for id in ancestors_id {
+            let entity = self.get_entity(id).unwrap();
+            ancestors.push(entity);
+        }
+        ancestors.shrink_to_fit();
+        ancestors
     }
 
     // Children

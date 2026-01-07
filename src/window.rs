@@ -9,9 +9,11 @@ use beryllium::{
     *,
 };
 use ogl33::*;
-use ultraviolet::Mat4;
 
-use crate::{gl_helper::*, mesh::Mesh};
+use crate::{
+    entities::{entity::EntityType, entity_tree::EntityTree},
+    gl_helper::*,
+};
 
 /// A wrapper for `GlWindow`, shader program and multiple GL objects:
 /// - `vao`,
@@ -105,7 +107,7 @@ impl Window {
     /// Executes the render loop
     /// # Note
     /// The loop doesn't run in a different thread
-    pub fn render_loop(&self, meshes: &Vec<Mesh>) {
+    pub fn render_loop(&self, entity_tree: &EntityTree) {
         'main_loop: loop {
             while let Some(event) = self.sdl.poll_events() {
                 if let (Event::Quit, _) = event {
@@ -115,24 +117,38 @@ impl Window {
 
             unsafe {
                 glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-                self.shader_program
-                    .set_matrix4("transform\0", Mat4::identity());
+            }
 
-                for msh in meshes {
-                    buffer_data(
-                        BufferType::Array,
-                        bytemuck::cast_slice(msh.to_vertex_data_internal().as_slice()),
-                        GL_DYNAMIC_DRAW,
-                    );
-                    buffer_data(
-                        BufferType::ElementArray,
-                        bytemuck::cast_slice(msh.indices.as_slice()),
-                        GL_DYNAMIC_DRAW,
-                    );
+            for part_id in &entity_tree.parts {
+                let entity_null = entity_tree.get_entity(*part_id);
+                let Some(entity) = entity_null else {
+                    continue;
+                };
+                let EntityType::Part(part) = entity.get_type() else {
+                    continue;
+                };
 
+                let transform = part.transform;
+                self.shader_program.set_matrix4("transform\0", transform);
+                self.shader_program.set_color3("obj_color\0", part.color);
+
+                let mesh = part.get_mesh();
+
+                buffer_data(
+                    BufferType::Array,
+                    bytemuck::cast_slice(mesh.to_vertex_data_internal().as_slice()),
+                    GL_DYNAMIC_DRAW,
+                );
+                buffer_data(
+                    BufferType::ElementArray,
+                    bytemuck::cast_slice(mesh.indices.as_slice()),
+                    GL_DYNAMIC_DRAW,
+                );
+
+                unsafe {
                     glDrawElements(
                         GL_TRIANGLES,
-                        msh.indices.len() as i32,
+                        mesh.indices.len() as i32,
                         GL_UNSIGNED_INT,
                         ptr::null(),
                     );

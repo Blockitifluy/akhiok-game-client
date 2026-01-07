@@ -4,7 +4,7 @@ use std::fs;
 use ogl33::*;
 use ultraviolet::Mat4;
 
-use crate::datatypes::color::Color3;
+use crate::datatypes::{color::Color3, vectors::Vector3};
 
 /// A `vertex array object` used for rendering meshes.
 pub struct VertexArray(pub GLuint);
@@ -300,6 +300,36 @@ impl ShaderProgram {
                 1,
                 GL_FALSE,
                 value.as_ptr(),
+            );
+        }
+    }
+
+    /// Sets the a `Vector3` uniform value in the program.
+    /// # Arguements
+    /// - `name`: the name of the value
+    /// - `value`: a Vector3 value
+    pub fn set_vector3(&self, name: &str, vec: Vector3) {
+        unsafe {
+            glUniform3f(
+                glGetUniformLocation(self.0, name.as_ptr().cast()),
+                vec.x,
+                vec.y,
+                vec.z,
+            );
+        }
+    }
+
+    /// Sets the a `Color3` uniform value in the program.
+    /// # Arguements
+    /// - `name`: the name of the value
+    /// - `value`: a Color3 value
+    pub fn set_color3(&self, name: &str, color: Color3) {
+        unsafe {
+            glUniform3f(
+                glGetUniformLocation(self.0, name.as_ptr().cast()),
+                color.r,
+                color.g,
+                color.b,
             );
         }
     }
