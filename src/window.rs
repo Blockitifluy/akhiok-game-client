@@ -9,6 +9,8 @@ use beryllium::{
     *,
 };
 use ogl33::*;
+use ultraviolet::{Mat4, Vec3};
+use uuid::Uuid;
 
 use crate::{
     entities::{entity::EntityType, entity_tree::EntityTree},
@@ -104,10 +106,76 @@ impl Window {
         }
     }
 
+    fn render_part(&self, entity_tree: &EntityTree, part_id: &Uuid) {
+        let entity_null = entity_tree.get_entity(*part_id);
+        let Some(entity) = entity_null else {
+            return;
+        };
+        let EntityType::Part(part) = entity.get_type() else {
+            return;
+        };
+
+        if !part.visable {
+            return;
+        }
+
+        let transform = part.transform;
+        self.shader_program.set_matrix4("model\0", transform);
+        self.shader_program.set_color3("obj_color\0", part.color);
+
+        let mesh = part.get_mesh();
+
+        buffer_data(
+            BufferType::Array,
+            bytemuck::cast_slice(mesh.to_vertex_data_internal().as_slice()),
+            GL_DYNAMIC_DRAW,
+        );
+        buffer_data(
+            BufferType::ElementArray,
+            bytemuck::cast_slice(mesh.indices.as_slice()),
+            GL_DYNAMIC_DRAW,
+        );
+
+        let texture_null = part.get_texture();
+
+        if let Some(texture) = texture_null {
+            unsafe {
+                glBindTexture(GL_TEXTURE_2D, texture.texture_id);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT as GLint);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT as GLint);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR as GLint);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR as GLint);
+                glTexImage2D(
+                    GL_TEXTURE_2D,
+                    0,
+                    GL_RGBA as GLint,
+                    texture.width as GLsizei,
+                    texture.height as GLsizei,
+                    0,
+                    GL_RGBA,
+                    GL_UNSIGNED_BYTE,
+                    texture.pixels.cast(),
+                );
+                glGenerateMipmap(GL_TEXTURE_2D);
+
+                glDrawElements(
+                    GL_TRIANGLES,
+                    mesh.indices.len() as i32,
+                    GL_UNSIGNED_INT,
+                    ptr::null(),
+                );
+                self.shader_program.use_program();
+            }
+        }
+    }
+
     /// Executes the render loop
     /// # Note
     /// The loop doesn't run in a different thread
     pub fn render_loop(&self, entity_tree: &EntityTree) {
+        let view = Mat4::from_translation(Vec3::new(0.0, 0.0, -1.0));
+        self.shader_program.set_matrix4("view\0", view);
+
         'main_loop: loop {
             while let Some(event) = self.sdl.poll_events() {
                 if let (Event::Quit, _) = event {
@@ -119,66 +187,23 @@ impl Window {
                 glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
             }
 
-            for part_id in &entity_tree.parts {
-                let entity_null = entity_tree.get_entity(*part_id);
-                let Some(entity) = entity_null else {
-                    continue;
+            let main_camera_null = entity_tree.get_main_camera();
+
+            if let Some(main_camera) = main_camera_null {
+                let main_camera_borrow = main_camera.borrow();
+
+                let EntityType::Camera(camera) = main_camera_borrow.get_type() else {
+                    panic!("camera doesn't isn't a camera type");
                 };
-                let EntityType::Part(part) = entity.get_type() else {
-                    continue;
-                };
 
-                if !part.visable {
-                    continue;
-                }
+                let window_size = self.window.get_window_size();
+                let aspect_ratio = (window_size.0 as f32) / (window_size.1 as f32);
 
-                let transform = part.transform;
-                self.shader_program.set_matrix4("transform\0", transform);
-                self.shader_program.set_color3("obj_color\0", part.color);
+                let projection = camera.get_projection(aspect_ratio);
+                self.shader_program.set_matrix4("projection\0", projection);
 
-                let mesh = part.get_mesh();
-
-                buffer_data(
-                    BufferType::Array,
-                    bytemuck::cast_slice(mesh.to_vertex_data_internal().as_slice()),
-                    GL_DYNAMIC_DRAW,
-                );
-                buffer_data(
-                    BufferType::ElementArray,
-                    bytemuck::cast_slice(mesh.indices.as_slice()),
-                    GL_DYNAMIC_DRAW,
-                );
-
-                let texture_null = part.get_texture();
-
-                if let Some(texture) = texture_null {
-                    unsafe {
-                        glBindTexture(GL_TEXTURE_2D, texture.texture_id);
-                        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT as GLint);
-                        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT as GLint);
-                        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR as GLint);
-                        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR as GLint);
-                        glTexImage2D(
-                            GL_TEXTURE_2D,
-                            0,
-                            GL_RGBA as GLint,
-                            texture.width as GLsizei,
-                            texture.height as GLsizei,
-                            0,
-                            GL_RGBA,
-                            GL_UNSIGNED_BYTE,
-                            texture.pixels.cast(),
-                        );
-                        glGenerateMipmap(GL_TEXTURE_2D);
-
-                        glDrawElements(
-                            GL_TRIANGLES,
-                            mesh.indices.len() as i32,
-                            GL_UNSIGNED_INT,
-                            ptr::null(),
-                        );
-                        self.shader_program.use_program();
-                    }
+                for part_id in &entity_tree.parts {
+                    self.render_part(entity_tree, part_id);
                 }
             }
 

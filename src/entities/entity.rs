@@ -3,7 +3,7 @@
 use std::{fmt, str::FromStr};
 use uuid::Uuid;
 
-use crate::entities::part_type::PartType;
+use crate::entities::{camera::CameraType, part_type::PartType};
 
 /// The type of entity.
 /// The enum stores a `Box` pointer to a struct
@@ -16,6 +16,7 @@ pub enum EntityType {
     Game(Box<GameType>),
     /// A building block entity.
     Part(Box<PartType>),
+    Camera(Box<CameraType>),
 }
 
 /// An entity, used as a node in a tree hierarchry (`EntityTree`).

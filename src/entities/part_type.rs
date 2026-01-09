@@ -1,10 +1,11 @@
 //! Contains the `PartType` entity which is used to make a visable object like a building block.
 
 use dispose::Disposable;
-use ultraviolet::{Mat4, Vec3};
+use ultraviolet::Mat4;
 
 use crate::{
     datatypes::{color::Color3, vectors::Vector3},
+    entities::object_3d::{Object3D, Object3DSize, calculate_transform_with_size},
     mesh::Mesh,
     texture::Texture,
 };
@@ -115,76 +116,42 @@ impl PartType {
         self.mesh = mesh;
         Ok(())
     }
+}
 
-    // Transformation
-
+impl Object3D for PartType {
     fn calculate_transform(&self) -> Mat4 {
-        let (roll, pitch, yaw) = (
-            self.rotation.x.to_radians(),
-            self.rotation.y.to_radians(),
-            self.rotation.z.to_radians(),
-        );
-
-        Mat4::identity()
-            * Mat4::from_translation(Vec3 {
-                x: self.position.x,
-                y: self.position.y,
-                z: self.position.z,
-            })
-            * Mat4::from_euler_angles(roll, pitch, yaw)
-            * Mat4::from_nonuniform_scale(Vec3 {
-                x: self.size.x,
-                y: self.size.y,
-                z: self.size.z,
-            })
+        calculate_transform_with_size(self)
     }
 
     fn recalculate_transform(&mut self) {
         self.transform = self.calculate_transform();
     }
 
-    /// Gets the position.
-    /// # Returns
-    /// A position vector
-    pub fn get_position(&self) -> Vector3 {
+    fn get_position(&self) -> Vector3 {
         self.position
     }
 
-    /// Sets the position.
-    /// # Arguement
-    /// - `pos`: the new position
-    pub fn set_position(&mut self, pos: Vector3) {
+    fn set_position(&mut self, pos: Vector3) {
         self.position = pos;
         self.recalculate_transform();
     }
 
-    /// Gets the rotation.
-    /// # Returns
-    /// An euler rotation
-    pub fn get_rotation(&self) -> Vector3 {
+    fn get_rotation(&self) -> Vector3 {
         self.rotation
     }
 
-    /// Sets the rotation.
-    /// # Arguement
-    /// - `rot`: the rotation euler
-    pub fn set_rotation(&mut self, rot: Vector3) {
+    fn set_rotation(&mut self, rot: Vector3) {
         self.rotation = rot;
         self.recalculate_transform();
     }
+}
 
-    /// Gets the size.
-    /// # Arguement
-    /// - `size`: the size
-    pub fn get_size(&self) -> Vector3 {
+impl Object3DSize for PartType {
+    fn get_size(&self) -> Vector3 {
         self.size
     }
 
-    /// Sets the size.
-    /// # Arguement
-    /// - `size`: the size
-    pub fn set_size(&mut self, size: Vector3) {
+    fn set_size(&mut self, size: Vector3) {
         self.size = size;
-        self.recalculate_transform();
     }
 }

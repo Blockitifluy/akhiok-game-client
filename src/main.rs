@@ -13,18 +13,24 @@ pub mod datatypes {
 }
 /// Contains types used in the entity heirarchry structure.
 pub mod entities {
+    pub mod camera;
     pub mod entity;
     pub mod entity_tree;
+    pub mod input;
+    pub mod object_3d;
     pub mod part_type;
+    pub mod update;
 }
 pub mod window;
 
 use beryllium::video::{CreateWinArgs, GlSwapInterval};
 use core::{convert::TryInto, mem::size_of};
 use ogl33::*;
+use std::ops::DerefMut;
 use std::ptr;
 
 use crate::datatypes::color::Color3;
+use crate::entities::camera::CameraType;
 use crate::entities::entity::EntityType;
 use crate::entities::entity_tree::EntityTree;
 use crate::entities::part_type::PartType;
@@ -75,16 +81,11 @@ fn init_test_tree(entity_tree: &mut EntityTree) {
     let bitmap = Texture::from_file("assets/awesomeface.png").unwrap();
     part_type.set_texture(bitmap);
 
-    let base_entity = entity_tree.add_entity("new-entity", EntityType::Base);
-    entity_tree
-        .set_parent(base_entity.borrow_mut(), Some(head.borrow_mut()))
-        .unwrap();
-    let _part_entity = entity_tree
-        .add_entity_with_parent(
-            "part-entity",
-            EntityType::Part(part_type),
-            head.borrow_mut(),
-        )
+    let mut head_borrow = head.borrow_mut();
+
+    let _ = entity_tree.add_main_camera(Some(&mut head_borrow), CameraType::new(90.0, 0.1, 100.0));
+    let _ = entity_tree
+        .add_entity_with_parent("part-entity", EntityType::Part(part_type), &mut head_borrow)
         .unwrap();
 }
 
