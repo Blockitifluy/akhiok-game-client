@@ -1,10 +1,12 @@
 //! Contains the `PartType` entity which is used to make a visable object like a building block.
 
+use dispose::Disposable;
 use ultraviolet::{Mat4, Vec3};
 
 use crate::{
     datatypes::{color::Color3, vectors::Vector3},
     mesh::Mesh,
+    texture::Texture,
 };
 
 /// The part entity type.
@@ -13,6 +15,7 @@ use crate::{
 pub struct PartType {
     /// The mesh of the part
     mesh: Mesh,
+    texture: Option<Disposable<Texture>>,
     /// The color assigned
     pub color: Color3,
     /// Is the the part visable to the renderer
@@ -29,7 +32,7 @@ pub struct PartType {
 }
 impl PartType {
     /// Creates a new part.
-    /// # Arguement
+    /// # Arguements
     /// - `mesh`: a borrowed mesh
     /// # Returns
     /// A `PartType`
@@ -44,6 +47,7 @@ impl PartType {
             rotation: Vector3::default(),
             size: Vector3::new(1.0, 1.0, 1.0),
             transform: Mat4::identity(),
+            texture: None,
         };
 
         construct.recalculate_transform();
@@ -55,6 +59,33 @@ impl PartType {
     /// The borrowed mesh
     pub fn get_mesh(&self) -> &Mesh {
         &self.mesh
+    }
+
+    /// Gets the mesh of the part as a mutable borrow.
+    /// # Returns
+    /// A mutable borrow of a mesh
+    pub fn get_mut_mesh(&mut self) -> &mut Mesh {
+        &mut self.mesh
+    }
+
+    /// Gets the texture of the part.
+    /// # Returns
+    /// Either:
+    /// - The borrowed texture
+    /// - `None`
+    pub fn get_texture(&self) -> Option<&Disposable<Texture>> {
+        let Some(texture) = &self.texture else {
+            return None;
+        };
+        Some(texture)
+    }
+
+    /// Sets the texture of the part.
+    /// # Arguements
+    /// - `texture`: the new texture to be assigned
+    pub fn set_texture(&mut self, mut texture: Disposable<Texture>) {
+        texture.load_to_gl();
+        self.texture = Some(texture);
     }
 
     /// Loads a new mesh for the part.

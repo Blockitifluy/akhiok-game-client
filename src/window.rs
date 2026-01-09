@@ -128,6 +128,10 @@ impl Window {
                     continue;
                 };
 
+                if !part.visable {
+                    continue;
+                }
+
                 let transform = part.transform;
                 self.shader_program.set_matrix4("transform\0", transform);
                 self.shader_program.set_color3("obj_color\0", part.color);
@@ -145,14 +149,36 @@ impl Window {
                     GL_DYNAMIC_DRAW,
                 );
 
-                unsafe {
-                    glDrawElements(
-                        GL_TRIANGLES,
-                        mesh.indices.len() as i32,
-                        GL_UNSIGNED_INT,
-                        ptr::null(),
-                    );
-                    self.shader_program.use_program();
+                let texture_null = part.get_texture();
+
+                if let Some(texture) = texture_null {
+                    unsafe {
+                        glBindTexture(GL_TEXTURE_2D, texture.texture_id);
+                        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT as GLint);
+                        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT as GLint);
+                        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR as GLint);
+                        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR as GLint);
+                        glTexImage2D(
+                            GL_TEXTURE_2D,
+                            0,
+                            GL_RGBA as GLint,
+                            texture.width as GLsizei,
+                            texture.height as GLsizei,
+                            0,
+                            GL_RGBA,
+                            GL_UNSIGNED_BYTE,
+                            texture.pixels.cast(),
+                        );
+                        glGenerateMipmap(GL_TEXTURE_2D);
+
+                        glDrawElements(
+                            GL_TRIANGLES,
+                            mesh.indices.len() as i32,
+                            GL_UNSIGNED_INT,
+                            ptr::null(),
+                        );
+                        self.shader_program.use_program();
+                    }
                 }
             }
 

@@ -1,7 +1,11 @@
 //! Used for the creation and defination of textures. Used in rendering images on meshes.
 use std::{fs, io, ptr::null_mut};
 
+use dispose::{Disposable, Dispose};
+use ogl33::glGenBuffers;
+
 /// A texture usable inside of the engine.
+#[derive(Debug, Clone)]
 pub struct Texture {
     /// The images's width
     pub width: i32,
@@ -11,6 +15,8 @@ pub struct Texture {
     pub pixels: *mut u8,
     /// The colour space of the image
     pub comp: i32,
+    /// The gl buffer
+    pub texture_id: u32,
 }
 impl Texture {
     /// Make a texture from a byte vector
@@ -18,13 +24,14 @@ impl Texture {
     /// - `data`: a byte vector representing a image
     /// # Returns
     /// A new texture
-    pub fn new(mut data: Vec<u8>) -> Self {
-        let mut texture = Self {
+    pub fn new(mut data: Vec<u8>) -> Disposable<Self> {
+        let mut texture = Disposable::new(Self {
             width: 0,
             height: 0,
             pixels: null_mut(),
             comp: 0,
-        };
+            texture_id: 0,
+        });
 
         unsafe {
             stb_image_rust::stbi_set_flip_vertically_on_load(true as i32);
@@ -41,6 +48,13 @@ impl Texture {
         texture
     }
 
+    /// Loads the texture to gl
+    pub fn load_to_gl(&mut self) {
+        unsafe {
+            glGenBuffers(1, &mut self.texture_id);
+        }
+    }
+
     /// Reads the texture file to an texture that would be usable inside the engine.
     /// # Arguements
     /// - `path`: the file's path
@@ -48,7 +62,7 @@ impl Texture {
     /// Either:
     /// - `Ok`: A new texture
     /// - `Err`: An error message
-    pub fn from_file(path: &str) -> Result<Self, &'static str> {
+    pub fn from_file(path: &str) -> Result<Disposable<Self>, &'static str> {
         let f_ex = fs::File::open(path);
         let Ok(mut f) = f_ex else {
             return Err("couldn't load texture");
@@ -64,9 +78,16 @@ impl Texture {
     }
 
     /// Frees the texture.
-    pub fn free(self) {
+    pub fn free(&self) {
         unsafe {
             stb_image_rust::c_runtime::free(self.pixels);
         }
+    }
+}
+
+impl Dispose for Texture {
+    fn dispose(self) {
+        println!("texture disposed");
+        self.free();
     }
 }

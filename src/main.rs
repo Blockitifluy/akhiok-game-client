@@ -41,10 +41,7 @@ const VERT_SHADER: &str = "src/shaders/vert.glsl";
 /// The path of the fragmentation shader
 const FRAG_SHADER: &str = "src/shaders/frag.glsl";
 
-/// main function
-fn main() {
-    let bitmap = Texture::from_file("assets/awesomeface.png").unwrap();
-
+fn start_window() -> Window {
     let win_args = CreateWinArgs {
         title: WINDOW_TITLE,
         width: 800,
@@ -57,22 +54,26 @@ fn main() {
     let mut win = Window::new(win_args).unwrap();
     let gl_window = &win.window;
     gl_window.set_swap_interval(GlSwapInterval::Vsync).unwrap();
-
     unsafe {
         load_gl_with(|f_name| gl_window.get_proc_address(f_name.cast()));
     }
 
     clear_color(Color3::new(0.2, 0.3, 0.3).unwrap());
+    win.init_objects(VERT_SHADER, FRAG_SHADER).unwrap();
+    win
+}
+
+fn init_test_tree(entity_tree: &mut EntityTree) {
     let mesh = Mesh::load_mesh_from_file("assets/meshs/plane.mesh").unwrap();
 
-    win.init_objects(VERT_SHADER, FRAG_SHADER).unwrap();
-
-    let mut entity_tree = EntityTree::default();
     let head = entity_tree.add_head();
     println!("{}", head.borrow().get_uuid());
 
     let mut part_type = Box::new(PartType::new(&mesh));
-    part_type.color = Color3::from_rgb(255, 0, 0);
+    part_type.color = Color3::from_hex(0xff0000);
+
+    let bitmap = Texture::from_file("assets/awesomeface.png").unwrap();
+    part_type.set_texture(bitmap);
 
     let base_entity = entity_tree.add_entity("new-entity", EntityType::Base);
     entity_tree
@@ -85,38 +86,9 @@ fn main() {
             head.borrow_mut(),
         )
         .unwrap();
+}
 
-    let mut meshes: Vec<Mesh> = vec![];
-
-    let mesh2 = Mesh::load_mesh_from_file("assets/meshs/triangle.mesh").unwrap();
-    meshes.push(mesh);
-    meshes.push(mesh2);
-
-    let mut texture = 0;
-    unsafe {
-        glGenBuffers(1, &mut texture);
-        glBindTexture(GL_TEXTURE_2D, texture);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT as GLint);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT as GLint);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR as GLint);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR as GLint);
-        glTexImage2D(
-            GL_TEXTURE_2D,
-            0,
-            GL_RGBA as GLint,
-            bitmap.width as GLsizei,
-            bitmap.height as GLsizei,
-            0,
-            GL_RGBA,
-            GL_UNSIGNED_BYTE,
-            bitmap.pixels.cast(),
-        );
-        glGenerateMipmap(GL_TEXTURE_2D);
-        bitmap.free();
-    }
-
-    win.shader_program.use_program();
-
+fn enable_vertex_arrays() {
     unsafe {
         let vertex_data_size = size_of::<VertexDataInternal>().try_into().unwrap();
 
@@ -135,6 +107,17 @@ fn main() {
         );
         glEnableVertexAttribArray(1);
     }
+}
+
+/// main function
+fn main() {
+    let win = start_window();
+    let mut entity_tree = EntityTree::default();
+    init_test_tree(&mut entity_tree);
+
+    win.shader_program.use_program();
+
+    enable_vertex_arrays();
 
     polygon_mode(gl_helper::PolygonMode::Fill);
     win.render_loop(&entity_tree);

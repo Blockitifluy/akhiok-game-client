@@ -56,10 +56,7 @@ impl EntityTree {
     ) -> Result<Rc<RefCell<Entity>>, &'static str> {
         let entity = self.add_entity(name, entity_type);
         let entity_borrow = entity.borrow_mut();
-        let res = self.set_parent(entity_borrow, Some(parent));
-        if let Err(err) = res {
-            return Err(err);
-        }
+        self.set_parent(entity_borrow, Some(parent))?;
         Ok(entity)
     }
 

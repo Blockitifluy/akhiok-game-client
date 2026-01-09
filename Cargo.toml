@@ -11,4 +11,5 @@ beryllium = "0.13.3"
 ogl33 = { version = "0.2", features = ["debug_error_checks"] }
 stb_image_rust = "2.27.2"
 uuid = { version ="1.19.0", features = ["v4"] }
+dispose = "0.5.2"
 
