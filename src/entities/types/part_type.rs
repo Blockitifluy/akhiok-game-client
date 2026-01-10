@@ -5,7 +5,7 @@ use ultraviolet::Mat4;
 
 use crate::{
     datatypes::{color::Color3, vectors::Vector3},
-    entities::object_3d::{Object3D, Object3DSize, calculate_transform_with_size},
+    entities::traits::object_3d::*,
     mesh::Mesh,
     texture::Texture,
 };

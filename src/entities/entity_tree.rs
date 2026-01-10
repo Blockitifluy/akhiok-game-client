@@ -10,8 +10,11 @@ use std::{
 use uuid::Uuid;
 
 use crate::entities::{
-    camera::CameraType,
-    entity::{Entity, EntityType, GameGenre, GameType},
+    entity::{Entity, EntityType},
+    types::{
+        camera_type::CameraType,
+        game_type::{GameGenre, GameType},
+    },
 };
 
 /// A tree of entities.
@@ -21,6 +24,8 @@ pub struct EntityTree {
     /// The identitier of the head (usually `GameType`).
     /// Can be `None`.
     pub head: Option<Uuid>,
+    /// The identitier of the main camera.
+    /// Can be `None`.
     pub main_camera: Option<Uuid>,
     /// The indentifier for every part.
     pub parts: Vec<Uuid>,
@@ -90,6 +95,12 @@ impl EntityTree {
         Some(self.entity_map[&head_id].clone())
     }
 
+    /// Adds a new main camera of the `Camera` entity type.
+    /// # Arguements
+    /// - `parent`: the camera's parent
+    /// - `camera_type`: the camera_type variant
+    /// # Returns
+    /// An option of a reference counted RefCell of the camera `Entity`
     pub fn add_main_camera(
         &mut self,
         parent: Option<&mut Entity>,
@@ -114,6 +125,9 @@ impl EntityTree {
         Some(camera.clone())
     }
 
+    /// Gets the main camera
+    /// # Returns
+    /// An option of reference counted RefCell of the camera `Entity`
     pub fn get_main_camera(&self) -> Option<Rc<RefCell<Entity>>> {
         let camera_id = self.main_camera?;
 

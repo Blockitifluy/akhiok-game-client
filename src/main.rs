@@ -13,27 +13,32 @@ pub mod datatypes {
 }
 /// Contains types used in the entity heirarchry structure.
 pub mod entities {
-    pub mod camera;
     pub mod entity;
     pub mod entity_tree;
-    pub mod input;
-    pub mod object_3d;
-    pub mod part_type;
-    pub mod update;
+    /// Contains all variants of entities
+    pub mod types {
+        pub mod camera_type;
+        pub mod game_type;
+        pub mod part_type;
+    }
+    /// Contains common entity traits
+    pub mod traits {
+        pub mod object_3d;
+        pub mod update;
+    }
 }
 pub mod window;
 
 use beryllium::video::{CreateWinArgs, GlSwapInterval};
 use core::{convert::TryInto, mem::size_of};
 use ogl33::*;
-use std::ops::DerefMut;
 use std::ptr;
 
 use crate::datatypes::color::Color3;
-use crate::entities::camera::CameraType;
 use crate::entities::entity::EntityType;
 use crate::entities::entity_tree::EntityTree;
-use crate::entities::part_type::PartType;
+use crate::entities::types::camera_type::CameraType;
+use crate::entities::types::part_type::PartType;
 use crate::gl_helper::*;
 use crate::mesh::*;
 use crate::texture::*;

@@ -3,7 +3,7 @@
 use std::{fmt, str::FromStr};
 use uuid::Uuid;
 
-use crate::entities::{camera::CameraType, part_type::PartType};
+use crate::entities::types as ent_types;
 
 /// The type of entity.
 /// The enum stores a `Box` pointer to a struct
@@ -13,10 +13,11 @@ pub enum EntityType {
     Base,
     /// The game entity.
     /// Used as a head of a EntityTree.
-    Game(Box<GameType>),
+    Game(Box<ent_types::game_type::GameType>),
     /// A building block entity.
-    Part(Box<PartType>),
-    Camera(Box<CameraType>),
+    Part(Box<ent_types::part_type::PartType>),
+    /// A camera used for rendering
+    Camera(Box<ent_types::camera_type::CameraType>),
 }
 
 /// An entity, used as a node in a tree hierarchry (`EntityTree`).
@@ -100,21 +101,4 @@ impl fmt::Display for Entity {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(formatter, "{}", self.name)
     }
-}
-
-/// The game's genre
-#[derive(Debug)]
-pub enum GameGenre {
-    /// Action
-    Action,
-    /// Adventure
-    Adventure,
-}
-
-/// The game entity type.
-/// Used as a head of a `EntityTree`.
-#[derive(Debug)]
-pub struct GameType {
-    /// The game genre
-    pub genre: GameGenre,
 }

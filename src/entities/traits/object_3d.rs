@@ -1,3 +1,5 @@
+//! Contains the traits `Object3D` and `Object3DSize`. Useful for handling transformations for
+//! entities.
 use ultraviolet::{Mat4, Vec3};
 
 use crate::datatypes::vectors::Vector3;
