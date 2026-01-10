@@ -1,6 +1,5 @@
 //! Contains the `PartType` entity which is used to make a visable object like a building block.
 
-use dispose::Disposable;
 use ultraviolet::Mat4;
 
 use crate::{
@@ -16,7 +15,7 @@ use crate::{
 pub struct PartType {
     /// The mesh of the part
     mesh: Mesh,
-    texture: Option<Disposable<Texture>>,
+    texture: Option<Texture>,
     /// The color assigned
     pub color: Color3,
     /// Is the the part visable to the renderer
@@ -80,7 +79,7 @@ impl PartType {
     /// Either:
     /// - The borrowed texture
     /// - `None`
-    pub fn get_texture(&self) -> Option<&Disposable<Texture>> {
+    pub fn get_texture(&self) -> Option<&Texture> {
         let Some(texture) = &self.texture else {
             return None;
         };
@@ -90,7 +89,7 @@ impl PartType {
     /// Sets the texture of the part.
     /// # Arguements
     /// - `texture`: the new texture to be assigned
-    pub fn set_texture(&mut self, mut texture: Disposable<Texture>) {
+    pub fn set_texture(&mut self, mut texture: Texture) {
         texture.load_to_gl();
         self.texture = Some(texture);
     }

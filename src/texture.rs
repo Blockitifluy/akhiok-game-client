@@ -1,7 +1,6 @@
 //! Used for the creation and defination of textures. Used in rendering images on meshes.
 use std::{fs, io, ptr::null_mut};
 
-use dispose::{Disposable, Dispose};
 use ogl33::glGenBuffers;
 
 /// A texture usable inside of the engine.
@@ -24,14 +23,14 @@ impl Texture {
     /// - `data`: a byte vector representing a image
     /// # Returns
     /// A new texture
-    pub fn new(mut data: Vec<u8>) -> Disposable<Self> {
-        let mut texture = Disposable::new(Self {
+    pub fn new(mut data: Vec<u8>) -> Self {
+        let mut texture = Self {
             width: 0,
             height: 0,
             pixels: null_mut(),
             comp: 0,
             texture_id: 0,
-        });
+        };
 
         unsafe {
             stb_image_rust::stbi_set_flip_vertically_on_load(true as i32);
@@ -62,7 +61,7 @@ impl Texture {
     /// Either:
     /// - `Ok`: A new texture
     /// - `Err`: An error message
-    pub fn from_file(path: &str) -> Result<Disposable<Self>, &'static str> {
+    pub fn from_file(path: &str) -> Result<Self, &'static str> {
         let f_ex = fs::File::open(path);
         let Ok(mut f) = f_ex else {
             return Err("couldn't load texture");
@@ -85,9 +84,8 @@ impl Texture {
     }
 }
 
-impl Dispose for Texture {
-    fn dispose(self) {
-        println!("texture disposed");
+impl Drop for Texture {
+    fn drop(&mut self) {
         self.free();
     }
 }

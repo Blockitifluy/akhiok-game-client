@@ -249,7 +249,7 @@ impl EntityTree {
             former_parent.children_id.remove(index);
         }
         entity_mut.parent_id = Some(new_id);
-        entity_mut.children_id.push(new_id);
+        new_parent.children_id.push(self_id);
         Ok(())
     }
 
@@ -286,15 +286,10 @@ impl EntityTree {
     /// # Returns
     /// A collection of a mutable reference to an entity
     pub fn get_ancestors_mut(&self, entity: &Entity) -> Vec<RefMut<Entity>> {
-        let ancestors_id = self.get_ancestors_id(entity);
-        let mut ancestors = Vec::with_capacity(16);
-
-        for id in ancestors_id {
-            let entity = self.get_entity_mut(id).unwrap();
-            ancestors.push(entity);
-        }
-        ancestors.shrink_to_fit();
-        ancestors
+        self.get_ancestors_id(entity)
+            .iter()
+            .map(|id| self.entity_map[id].borrow_mut())
+            .collect()
     }
 
     /// Gets an entity's ancestors as immutable references.
@@ -303,15 +298,10 @@ impl EntityTree {
     /// # Returns
     /// A collection of a immutable reference to an entity
     pub fn get_ancestors(&self, entity: &Entity) -> Vec<Ref<Entity>> {
-        let ancestors_id = self.get_ancestors_id(entity);
-        let mut ancestors = Vec::with_capacity(16);
-
-        for id in ancestors_id {
-            let entity = self.get_entity(id).unwrap();
-            ancestors.push(entity);
-        }
-        ancestors.shrink_to_fit();
-        ancestors
+        self.get_ancestors_id(entity)
+            .iter()
+            .map(|id| self.entity_map[id].borrow())
+            .collect()
     }
 
     // Children
@@ -322,14 +312,11 @@ impl EntityTree {
     /// # Returns
     /// A collection of references to an entity
     pub fn get_children(&self, entity: &Entity) -> Vec<Ref<Entity>> {
-        let mut children = Vec::with_capacity(16);
-
-        for child_id in entity.children_id.clone() {
-            children.push(self.entity_map[&child_id].borrow());
-        }
-
-        children.shrink_to_fit();
-        children
+        entity
+            .children_id
+            .iter()
+            .map(|id| self.entity_map[id].borrow())
+            .collect()
     }
 
     // If I have to expierence this shit again I am rewriting the entire project in C++
@@ -358,15 +345,11 @@ impl EntityTree {
     /// # Returns
     /// A collection of mutable references to an entity
     pub fn get_children_mut(&mut self, entity: &Entity) -> Vec<RefMut<Entity>> {
-        let mut children: Vec<RefMut<Entity>> = Vec::with_capacity(entity.children_id.len());
-
-        for child_id in entity.children_id.clone() {
-            let child_ref = self.get_entity_mut(child_id);
-            if let Some(child) = child_ref {
-                children.push(child);
-            }
-        }
-        children
+        entity
+            .children_id
+            .iter()
+            .map(|id| self.entity_map[id].borrow_mut())
+            .collect()
     }
 
     /// Gets an entity's descendent as identitiers.
@@ -376,7 +359,7 @@ impl EntityTree {
     /// A collection of IDs representing the entity's descendent.
     pub fn get_descendents_id(&self, entity: &Entity) -> Vec<Uuid> {
         let mut descendents = self.get_children(entity);
-        let mut stack_rel: Vec<Uuid> = descendents.iter().map(|e| e.get_uuid()).collect();
+        let mut stack_rel: Vec<Uuid> = entity.children_id.clone();
 
         while !stack_rel.is_empty() {
             let rel_id_null = stack_rel.pop();
@@ -389,7 +372,7 @@ impl EntityTree {
             stack_rel.append(&mut children);
             descendents.push(ent);
         }
-        stack_rel
+        descendents.iter().map(|e| e.get_uuid()).collect()
     }
 
     /// Gets an entity's descendents as a reference.
@@ -398,16 +381,10 @@ impl EntityTree {
     /// # Returns
     /// A collection of entities.
     pub fn get_descendents(&self, entity: &Entity) -> Vec<Ref<Entity>> {
-        let descendents_id = self.get_descendents_id(entity);
-        let mut descendents: Vec<Ref<Entity>> = Vec::with_capacity(descendents_id.len());
-
-        for id in descendents_id {
-            let descend_ref = self.get_entity(id);
-            if let Some(decend) = descend_ref {
-                descendents.push(decend);
-            }
-        }
-        descendents
+        self.get_descendents_id(entity)
+            .iter()
+            .map(|id| self.entity_map[id].borrow())
+            .collect()
     }
 
     /// Getsa an entity's descendents as an mutable reference.
@@ -416,15 +393,9 @@ impl EntityTree {
     /// # Returns
     /// A collection of entities as mutable references.
     pub fn get_descendents_mut(&mut self, entity: &Entity) -> Vec<RefMut<Entity>> {
-        let descendents_id = self.get_descendents_id(entity);
-        let mut descendents: Vec<RefMut<Entity>> = Vec::with_capacity(descendents_id.len());
-
-        for id in descendents_id {
-            let descend_ref = self.get_entity_mut(id);
-            if let Some(decend) = descend_ref {
-                descendents.push(decend);
-            }
-        }
-        descendents
+        self.get_descendents_id(entity)
+            .iter()
+            .map(|id| self.entity_map[id].borrow_mut())
+            .collect()
     }
 }

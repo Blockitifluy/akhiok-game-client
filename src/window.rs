@@ -16,6 +16,14 @@ use crate::{
     gl_helper::*,
 };
 
+/// Takes a string literal and concatenates a null byte onto the end.
+#[macro_export]
+macro_rules! null_str {
+    ($lit:literal) => {{
+        const _: &str = $lit;
+        concat!($lit, "\0")
+    }};
+}
 /// A wrapper for `GlWindow`, shader program and multiple GL objects:
 /// - `vao`,
 /// - `vbo` and
@@ -86,7 +94,7 @@ impl Window {
         self.ebo = ebo;
 
         let shader_program_ex =
-            ShaderProgram::from_vert_frag_file(vert, frag).inspect_err(|e| println!("{}", e));
+            ShaderProgram::from_vert_frag(vert, frag).inspect_err(|e| println!("{}", e));
         let Ok(shader_program) = shader_program_ex else {
             return Err("couldn't make shader program");
         };
@@ -119,8 +127,10 @@ impl Window {
         }
 
         let transform = part.transform;
-        self.shader_program.set_matrix4("model\0", transform);
-        self.shader_program.set_color3("obj_color\0", part.color);
+        self.shader_program
+            .set_matrix4(null_str!("model"), transform);
+        self.shader_program
+            .set_color3(null_str!("obj_color"), part.color);
 
         let mesh = part.get_mesh();
 
@@ -198,8 +208,9 @@ impl Window {
                 let view = camera.transform; // Mat4::from_translation(Vec3::new(0.0, 0.0, -1.0))
                 let projection = camera.get_projection(aspect_ratio);
 
-                self.shader_program.set_matrix4("projection\0", projection);
-                self.shader_program.set_matrix4("view\0", view);
+                self.shader_program
+                    .set_matrix4(null_str!("projection"), projection);
+                self.shader_program.set_matrix4(null_str!("view"), view);
 
                 for part_id in &entity_tree.parts {
                     self.render_part(entity_tree, part_id);

@@ -51,10 +51,10 @@ use crate::{
 /// The default window title
 const WINDOW_TITLE: &str = "Test Window";
 
-/// The path of the vertex shader
-const VERT_SHADER: &str = "src/shaders/vert.glsl";
-/// The path of the fragmentation shader
-const FRAG_SHADER: &str = "src/shaders/frag.glsl";
+/// The contents of the vertex shader file
+const VERT_SHADER: &str = include_str!("shaders/vert.glsl");
+/// The contents of the fragmentation shader file
+const FRAG_SHADER: &str = include_str!("shaders/frag.glsl");
 
 fn start_window() -> Window {
     let win_args = CreateWinArgs {
@@ -79,15 +79,15 @@ fn start_window() -> Window {
 }
 
 fn init_test_tree(entity_tree: &mut EntityTree) {
-    let mesh = Mesh::load_mesh_from_file("assets/meshs/plane.mesh").unwrap();
+    let mesh = Mesh::load_mesh(include_str!("../assets/meshs/plane.mesh")).unwrap();
 
     let head = entity_tree.add_head();
-    println!("{}", head.borrow().get_uuid());
+    println!("created entity tree's head: {}", head.borrow().get_uuid());
 
     let mut part_type = Box::new(PartType::new(&mesh));
     part_type.color = Color3::from_hex(0xff0000);
 
-    let bitmap = Texture::from_file("assets/awesomeface.png").unwrap();
+    let bitmap = Texture::new(include_bytes!("../assets/awesomeface.png").to_vec());
     part_type.set_texture(bitmap);
 
     let mut head_borrow = head.borrow_mut();
@@ -96,7 +96,13 @@ fn init_test_tree(entity_tree: &mut EntityTree) {
     camera_type.set_rotation(Vector3::new(0.0, 10.0, 0.0));
     camera_type.set_position(Vector3::forward() * -1.0);
 
-    let _ = entity_tree.add_main_camera(Some(&mut head_borrow), camera_type);
+    let camera = entity_tree
+        .add_main_camera(Some(&mut head_borrow), camera_type)
+        .unwrap();
+
+    let camera_borrow = camera.borrow();
+    println!("create camera: {}", camera_borrow.get_uuid());
+
     let _ = entity_tree
         .add_entity_with_parent("part-entity", EntityType::Part(part_type), &mut head_borrow)
         .unwrap();
