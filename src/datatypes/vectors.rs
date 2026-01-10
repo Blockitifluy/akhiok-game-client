@@ -16,7 +16,7 @@ pub struct Vector3 {
 }
 impl Vector3 {
     /// A vector of 0.0, 0.0, 0.0
-    pub fn zero() -> Self {
+    pub const fn zero() -> Self {
         Self {
             x: 0.0,
             y: 0.0,
@@ -25,7 +25,7 @@ impl Vector3 {
     }
 
     /// A vector of 1.0, 1.0, 1.0
-    pub fn one() -> Self {
+    pub const fn one() -> Self {
         Self {
             x: 1.0,
             y: 1.0,
@@ -34,7 +34,7 @@ impl Vector3 {
     }
 
     /// A vector of 1.0, 0.0, 0.0
-    pub fn right() -> Self {
+    pub const fn right() -> Self {
         Self {
             x: 1.0,
             y: 0.0,
@@ -43,7 +43,7 @@ impl Vector3 {
     }
 
     /// A vector of 0.0, 1.0, 0.0
-    pub fn up() -> Self {
+    pub const fn up() -> Self {
         Self {
             x: 0.0,
             y: 1.0,
@@ -52,7 +52,7 @@ impl Vector3 {
     }
 
     /// A vector of 0.0, 0.0, 1.0
-    pub fn forward() -> Self {
+    pub const fn forward() -> Self {
         Self {
             x: 0.0,
             y: 0.0,
@@ -74,7 +74,7 @@ impl Vector3 {
     /// Gets the cross product of 2 vectors.
     /// # Arguements
     /// - `other`: the second vector
-    pub fn cross(&self, other: &Self) -> Self {
+    pub fn cross(self, other: Self) -> Self {
         Self {
             x: (self.y * other.z) - (self.z * other.y),
             y: (self.z * other.x) - (self.x * other.z),
@@ -85,14 +85,14 @@ impl Vector3 {
     /// Gets the dot product of 2 vectors.
     /// # Arguements
     /// - `other`: the second vector
-    pub fn dot(&self, other: &Self) -> f32 {
+    pub fn dot(self, other: Self) -> f32 {
         (self.x * other.x) + (self.y * other.y) + (self.z * other.z)
     }
 
     /// Gets the magnitude of the vector.
     /// # Returns
     /// The magnitude
-    pub fn get_magnitude(&self) -> f32 {
+    pub fn get_magnitude(self) -> f32 {
         (self.x * self.x + self.y * self.y + self.z * self.z).sqrt()
     }
 
@@ -101,13 +101,13 @@ impl Vector3 {
     /// The unit vector
     /// # Note
     /// If the vector's axes are all equal to 0.0, then it returns `zero()`.
-    pub fn get_unit(&self) -> Self {
+    pub fn get_unit(self) -> Self {
         let zero = Self::zero();
-        if *self == zero {
+        if self == zero {
             return zero;
         }
 
-        *self / self.get_magnitude()
+        self / self.get_magnitude()
     }
 }
 

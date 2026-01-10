@@ -17,6 +17,9 @@ pub struct CameraType {
     /// How far an vertex can be until it won't be rendered
     pub far_view: f32,
 
+    front: Vector3,
+    right: Vector3,
+    up: Vector3,
     position: Vector3,
     rotation: Vector3,
 }
@@ -36,6 +39,9 @@ impl CameraType {
             far_view,
             position: Vector3::zero(),
             rotation: Vector3::zero(),
+            front: Vector3::forward(),
+            right: Vector3::right(),
+            up: Vector3::up(),
         };
 
         new.recalculate_transform();
@@ -76,5 +82,29 @@ impl Object3D for CameraType {
 
     fn set_rotation(&mut self, rot: Vector3) {
         self.rotation = rot;
+    }
+
+    fn get_front(&self) -> Vector3 {
+        self.front
+    }
+
+    fn set_front(&mut self, front: Vector3) {
+        self.front = front;
+    }
+
+    fn get_right(&self) -> Vector3 {
+        self.right
+    }
+
+    fn set_right(&mut self, right: Vector3) {
+        self.right = right;
+    }
+
+    fn get_up(&self) -> Vector3 {
+        self.up
+    }
+
+    fn set_up(&mut self, up: Vector3) {
+        self.up = up;
     }
 }

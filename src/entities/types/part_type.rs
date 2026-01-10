@@ -24,6 +24,9 @@ pub struct PartType {
     /// The transformation
     pub transform: Mat4,
 
+    front: Vector3,
+    right: Vector3,
+    up: Vector3,
     /// The position
     position: Vector3,
     /// The euler rotation
@@ -49,6 +52,9 @@ impl PartType {
             size: Vector3::new(1.0, 1.0, 1.0),
             transform: Mat4::identity(),
             texture: None,
+            front: Vector3::forward(),
+            right: Vector3::right(),
+            up: Vector3::up(),
         };
 
         construct.recalculate_transform();
@@ -143,6 +149,30 @@ impl Object3D for PartType {
     fn set_rotation(&mut self, rot: Vector3) {
         self.rotation = rot;
         self.recalculate_transform();
+    }
+
+    fn get_front(&self) -> Vector3 {
+        self.front
+    }
+
+    fn set_front(&mut self, front: Vector3) {
+        self.front = front;
+    }
+
+    fn get_right(&self) -> Vector3 {
+        self.right
+    }
+
+    fn set_right(&mut self, right: Vector3) {
+        self.right = right;
+    }
+
+    fn get_up(&self) -> Vector3 {
+        self.up
+    }
+
+    fn set_up(&mut self, up: Vector3) {
+        self.up = up;
     }
 }
 

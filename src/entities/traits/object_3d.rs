@@ -28,6 +28,50 @@ pub trait Object3D {
     /// # Arguement
     /// - `rot`: the rotation euler
     fn set_rotation(&mut self, rot: Vector3);
+
+    /// Gets the front.
+    /// # Returns
+    /// The _front_ vector (normalised)
+    fn get_front(&self) -> Vector3;
+    /// Set the front.
+    /// # Arguements
+    /// - `front`: the _front_ vector (normalised)
+    fn set_front(&mut self, front: Vector3);
+
+    /// Gets the right.
+    /// # Returns
+    /// The _right_ vector (normalised)
+    fn get_right(&self) -> Vector3;
+    /// Sets the right.
+    /// # Arguements
+    /// - `right`: the _right_ vector (normalised)
+    fn set_right(&mut self, right: Vector3);
+
+    /// Gets the up.
+    /// # Returns
+    /// The _up_ vector (normalised)
+    fn get_up(&self) -> Vector3;
+    /// Sets the up.
+    /// # Arguements
+    /// - `up`: The _up_ vector (normalised)
+    fn set_up(&mut self, up: Vector3);
+
+    /// Updates the `front`, `right` and `up` vector
+    fn update_vectors(&mut self) {
+        let rot = self.get_rotation();
+
+        let (pitch, yaw) = (rot.y.to_radians(), rot.x.to_radians());
+        let pitch_cos = pitch.cos();
+
+        let front =
+            Vector3::new(pitch_cos * yaw.cos(), pitch.sin(), pitch_cos * yaw.sin()).get_unit();
+        let right = front.cross(Vector3::up()).get_unit();
+        let up = right.cross(front).get_unit();
+
+        self.set_front(front);
+        self.set_right(right);
+        self.set_up(up);
+    }
 }
 
 /// A trait for any 3D object with a size.
@@ -57,13 +101,11 @@ pub fn calculate_transform<T: Object3D>(obj: &T) -> Mat4 {
         rotation.z.to_radians(),
     );
 
-    Mat4::identity()
-        * Mat4::from_translation(Vec3 {
-            x: position.x,
-            y: position.y,
-            z: position.z,
-        })
-        * Mat4::from_euler_angles(roll, pitch, yaw)
+    Mat4::from_translation(Vec3 {
+        x: position.x,
+        y: position.y,
+        z: position.z,
+    }) * Mat4::from_euler_angles(roll, pitch, yaw)
 }
 
 /// Calculates the transformation of the object with a size.

@@ -9,7 +9,6 @@ use beryllium::{
     *,
 };
 use ogl33::*;
-use ultraviolet::{Mat4, Vec3};
 use uuid::Uuid;
 
 use crate::{
@@ -173,9 +172,6 @@ impl Window {
     /// # Note
     /// The loop doesn't run in a different thread
     pub fn render_loop(&self, entity_tree: &EntityTree) {
-        let view = Mat4::from_translation(Vec3::new(0.0, 0.0, -1.0));
-        self.shader_program.set_matrix4("view\0", view);
-
         'main_loop: loop {
             while let Some(event) = self.sdl.poll_events() {
                 if let (Event::Quit, _) = event {
@@ -199,8 +195,11 @@ impl Window {
                 let window_size = self.window.get_window_size();
                 let aspect_ratio = (window_size.0 as f32) / (window_size.1 as f32);
 
+                let view = camera.transform; // Mat4::from_translation(Vec3::new(0.0, 0.0, -1.0))
                 let projection = camera.get_projection(aspect_ratio);
+
                 self.shader_program.set_matrix4("projection\0", projection);
+                self.shader_program.set_matrix4("view\0", view);
 
                 for part_id in &entity_tree.parts {
                     self.render_part(entity_tree, part_id);

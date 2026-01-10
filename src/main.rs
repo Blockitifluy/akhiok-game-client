@@ -34,15 +34,19 @@ use core::{convert::TryInto, mem::size_of};
 use ogl33::*;
 use std::ptr;
 
-use crate::datatypes::color::Color3;
-use crate::entities::entity::EntityType;
-use crate::entities::entity_tree::EntityTree;
-use crate::entities::types::camera_type::CameraType;
-use crate::entities::types::part_type::PartType;
-use crate::gl_helper::*;
-use crate::mesh::*;
-use crate::texture::*;
-use crate::window::*;
+use crate::{
+    datatypes::{color::Color3, vectors::Vector3},
+    entities::{
+        entity::EntityType,
+        entity_tree::EntityTree,
+        traits::object_3d::Object3D,
+        types::{camera_type::CameraType, part_type::PartType},
+    },
+    gl_helper::*,
+    mesh::*,
+    texture::*,
+    window::*,
+};
 
 /// The default window title
 const WINDOW_TITLE: &str = "Test Window";
@@ -88,7 +92,11 @@ fn init_test_tree(entity_tree: &mut EntityTree) {
 
     let mut head_borrow = head.borrow_mut();
 
-    let _ = entity_tree.add_main_camera(Some(&mut head_borrow), CameraType::new(90.0, 0.1, 100.0));
+    let mut camera_type = CameraType::new(90.0, 0.1, 100.0);
+    camera_type.set_rotation(Vector3::new(0.0, 10.0, 0.0));
+    camera_type.set_position(Vector3::forward() * -1.0);
+
+    let _ = entity_tree.add_main_camera(Some(&mut head_borrow), camera_type);
     let _ = entity_tree
         .add_entity_with_parent("part-entity", EntityType::Part(part_type), &mut head_borrow)
         .unwrap();
