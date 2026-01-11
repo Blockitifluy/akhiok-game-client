@@ -182,10 +182,28 @@ impl Window {
     /// # Note
     /// The loop doesn't run in a different thread
     pub fn render_loop(&self, entity_tree: &EntityTree) {
+        let head_binding = entity_tree.get_head().unwrap();
+        let head = head_binding.borrow();
+        let input_service_entity_null = entity_tree.find_first_child_mut(&head, "InputService");
+        let Some(mut input_service_entity) = input_service_entity_null else {
+            panic!("couldn't find service Entity InputService");
+        };
+
         'main_loop: loop {
-            while let Some(event) = self.sdl.poll_events() {
-                if let (Event::Quit, _) = event {
-                    break 'main_loop;
+            let EntityType::InputService(input_service) = input_service_entity.get_type_mut()
+            else {
+                panic!("couldn't borrow InputService");
+            };
+
+            while let Some((event, _timestamp)) = self.sdl.poll_events() {
+                match event {
+                    Event::Quit => break 'main_loop,
+                    Event::Key {
+                        pressed, keycode, ..
+                    } => {
+                        input_service.provide_input(keycode, pressed);
+                    }
+                    _ => (),
                 }
             }
 
@@ -218,6 +236,12 @@ impl Window {
             }
 
             self.window.swap_window();
+
+            let EntityType::InputService(input_service) = input_service_entity.get_type_mut()
+            else {
+                panic!("couldn't borrow InputService");
+            };
+            input_service.mark_cleanup();
         }
     }
 

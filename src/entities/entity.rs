@@ -18,6 +18,8 @@ pub enum EntityType {
     Part(Box<ent_types::part_type::PartType>),
     /// A camera used for rendering
     Camera(Box<ent_types::camera_type::CameraType>),
+    /// A service providing Input and Output support
+    InputService(Box<ent_types::io_service::InputService>),
 }
 
 /// An entity, used as a node in a tree hierarchry (`EntityTree`).
@@ -83,6 +85,11 @@ impl Entity {
     /// Gets the `EntityType` of the entity.
     pub fn get_type(&self) -> &EntityType {
         &self.entity_type
+    }
+
+    /// Gets the `EntityType` of the entity as a mutable reference.
+    pub fn get_type_mut(&mut self) -> &mut EntityType {
+        &mut self.entity_type
     }
 }
 

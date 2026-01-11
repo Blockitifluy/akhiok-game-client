@@ -17,6 +17,8 @@ use crate::entities::{
     },
 };
 
+// TODO: Add Child, Descendent and Ancestor iterators
+
 /// A tree of entities.
 /// Queries by a `HashMap` and `Uuid`s.
 #[derive(Debug, Default)]
@@ -187,18 +189,16 @@ impl EntityTree {
     /// - `entity`: a borrow of an entity
     /// # Returns
     /// An option to a reference of an entity
-    pub fn get_parent_mut(&mut self, entity: &Entity) -> Option<RefMut<Entity>> {
+    pub fn get_parent_mut(&self, entity: &Entity) -> Option<RefMut<Entity>> {
         let id = entity.parent_id?;
 
-        let relative_null = self.entity_map.get_mut(&id);
+        let relative = self.entity_map.get(&id)?;
 
-        if let Some(relative) = relative_null {
-            let borrow_attempt = relative.try_borrow_mut();
-            if let Ok(borrow) = borrow_attempt {
-                return Some(borrow);
-            }
-            println!("cannot borrow parent ID: {}", id);
+        let borrow_attempt = relative.try_borrow_mut();
+        if let Ok(borrow) = borrow_attempt {
+            return Some(borrow);
         }
+        println!("cannot borrow parent ID: {}", id);
         None
     }
 
@@ -251,6 +251,92 @@ impl EntityTree {
         entity_mut.parent_id = Some(new_id);
         new_parent.children_id.push(self_id);
         Ok(())
+    }
+
+    // Heirarchry Selection
+
+    /// Finds the first child that has the name that is equal to `name`.
+    /// # Arguements
+    /// - `entity`: the entity
+    /// - `name`: the name
+    /// # Returns
+    /// An optional reference entity
+    pub fn find_first_child(&self, entity: &Entity, name: &str) -> Option<Ref<Entity>> {
+        let entity = self
+            .get_children(entity)
+            .into_iter()
+            .find(|e| e.get_name() == name)?;
+        Some(entity)
+    }
+
+    /// Finds the first child that has the name that is equal to `name`.
+    /// # Arguements
+    /// - `entity`: the entity
+    /// - `name`: the name
+    /// # Returns
+    /// An optional mutable reference entity
+    pub fn find_first_child_mut(&self, entity: &Entity, name: &str) -> Option<RefMut<Entity>> {
+        let entity = self
+            .get_children_mut(entity)
+            .into_iter()
+            .find(|e| e.get_name() == name)?;
+        Some(entity)
+    }
+
+    /// Finds the first descendent that has the name that is equal to `name`.
+    /// # Arguements
+    /// - `entity`: the entity
+    /// - `name`: the name
+    /// # Returns
+    /// An optional reference entity
+    pub fn find_first_descendent(&self, entity: &Entity, name: &str) -> Option<Ref<Entity>> {
+        let entity = self
+            .get_descendents(entity)
+            .into_iter()
+            .find(|e| e.get_name() == name)?;
+        Some(entity)
+    }
+
+    /// Finds the first descendent that has the name that is equal to `name`.
+    /// # Arguements
+    /// - `entity`: the entity
+    /// - `name`: the name
+    /// # Returns
+    /// An optional mutable reference entity
+    pub fn find_first_descendent_mut(&self, entity: &Entity, name: &str) -> Option<RefMut<Entity>> {
+        let entity = self
+            .get_descendents_mut(entity)
+            .into_iter()
+            .find(|e| e.get_name() == name)?;
+        Some(entity)
+    }
+
+    /// Finds the first ancestor descendent that has the name that is equal to `name`.
+    /// # Arguements
+    /// - `entity`: the entity
+    /// - `name`: the name
+    /// # Returns
+    /// An optional mutable reference entity
+    pub fn find_first_ancestor(&self, entity: &Entity, name: &str) -> Option<Ref<Entity>> {
+        let entity = self
+            .get_ancestors(entity)
+            .into_iter()
+            .find(|e| e.get_name() == name)?;
+        Some(entity)
+    }
+
+    /// Finds the first ancestor that has the name that is equal to `name`.
+    /// # Arguements
+    /// - `entity`: the entity
+    /// - `name`: the name
+    /// # Returns
+    /// An optional mutable reference entity
+    pub fn find_first_ancestor_mut(&self, entity: &Entity, name: &str) -> Option<RefMut<Entity>> {
+        let entity = self
+            .get_ancestors_mut(entity)
+            .into_iter()
+            .find(|e| e.get_name() == name)?;
+        Some(entity)
     }
 
     // Ancestors
@@ -344,7 +430,7 @@ impl EntityTree {
     /// - `entity`: An entity
     /// # Returns
     /// A collection of mutable references to an entity
-    pub fn get_children_mut(&mut self, entity: &Entity) -> Vec<RefMut<Entity>> {
+    pub fn get_children_mut(&self, entity: &Entity) -> Vec<RefMut<Entity>> {
         entity
             .children_id
             .iter()
@@ -387,12 +473,12 @@ impl EntityTree {
             .collect()
     }
 
-    /// Getsa an entity's descendents as an mutable reference.
+    /// Gets an entity's descendents as an mutable reference.
     /// # Arguements
     /// - `entity`: A borrow of an entity
     /// # Returns
     /// A collection of entities as mutable references.
-    pub fn get_descendents_mut(&mut self, entity: &Entity) -> Vec<RefMut<Entity>> {
+    pub fn get_descendents_mut(&self, entity: &Entity) -> Vec<RefMut<Entity>> {
         self.get_descendents_id(entity)
             .iter()
             .map(|id| self.entity_map[id].borrow_mut())

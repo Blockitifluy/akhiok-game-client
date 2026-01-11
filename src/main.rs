@@ -19,6 +19,7 @@ pub mod entities {
     pub mod types {
         pub mod camera_type;
         pub mod game_type;
+        pub mod io_service;
         pub mod part_type;
     }
     /// Contains common entity traits
@@ -96,16 +97,19 @@ fn init_test_tree(entity_tree: &mut EntityTree) {
     camera_type.set_rotation(Vector3::new(0.0, 10.0, 0.0));
     camera_type.set_position(Vector3::forward() * -1.0);
 
-    let camera = entity_tree
+    let _ = entity_tree
         .add_main_camera(Some(&mut head_borrow), camera_type)
         .unwrap();
-
-    let camera_borrow = camera.borrow();
-    println!("create camera: {}", camera_borrow.get_uuid());
 
     let _ = entity_tree
         .add_entity_with_parent("part-entity", EntityType::Part(part_type), &mut head_borrow)
         .unwrap();
+
+    let _ = entity_tree.add_entity_with_parent(
+        "InputService",
+        EntityType::InputService(Box::default()),
+        &mut head_borrow,
+    );
 }
 
 fn enable_vertex_arrays() {
