@@ -121,15 +121,15 @@ impl Color3 {
     /// - An error message
     pub fn from_hsv(hue: i32, sat: f32, val: f32) -> Result<Self, String> {
         if !(0..360).contains(&hue) {
-            return Err(String::from_str("hue not in range of 0 to 360").unwrap());
+            return Err("hue not in range of 0 to 360".to_string());
         }
 
         if !(0.0..1.0).contains(&sat) {
-            return Err(String::from_str("satruation not in range of 0 to 1").unwrap());
+            return Err("satruation not in range of 0 to 1".to_string());
         }
 
         if !(0.0..1.0).contains(&val) {
-            return Err(String::from_str("value not in range of 0 to 1").unwrap());
+            return Err("value not in range of 0 to 1".to_string());
         }
 
         let hue_f = hue as f32;
@@ -140,7 +140,7 @@ impl Color3 {
         let r: i32 = hue / 60;
 
         if !(0..=5).contains(&r) {
-            return Err(String::from_str("hue out of range of 0 to 360").unwrap());
+            return Err("hue out of range of 0 to 360".to_string());
         }
 
         let (r_q, g_q, b_q);

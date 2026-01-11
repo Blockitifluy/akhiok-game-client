@@ -1,6 +1,6 @@
 //! Contains the `Entity`, `EntityType` and many critial entity types, such as: `GameType`.
 
-use std::{fmt, str::FromStr};
+use std::fmt;
 use uuid::Uuid;
 
 use crate::entities::types as ent_types;
@@ -48,8 +48,7 @@ impl Entity {
     /// # Returns
     /// `Self`
     pub fn new(name: &str, entity_type: EntityType) -> Self {
-        let name_string_ex = String::from_str(name);
-        let Ok(name_str) = name_string_ex;
+        let name_str = name.to_string();
         Self {
             parent_id: None,
             children_id: vec![],
@@ -77,8 +76,7 @@ impl Entity {
     /// # Arguements
     /// - `name`: the new name to be assigned to the node.
     pub fn set_name(&mut self, name: &str) {
-        let name_string_ex = String::from_str(name);
-        let Ok(name_str) = name_string_ex;
+        let name_str = name.to_string();
         self.name = name_str;
     }
 
@@ -96,7 +94,7 @@ impl Entity {
 impl Default for Entity {
     fn default() -> Self {
         Self {
-            name: String::from_str("entity").unwrap(),
+            name: "entity".to_string(),
             entity_type: EntityType::Base,
             uuid: Uuid::new_v4(),
             children_id: vec![],
