@@ -135,7 +135,7 @@ impl Color3 {
         let hue_f = hue as f32;
 
         let c: f32 = val * sat;
-        let x: f32 = c * (1.0 - f32::abs((hue_f / 60.0 % 2.0) - 1.0));
+        let x: f32 = c * (1.0 - ((hue_f / 60.0 % 2.0) - 1.0).abs());
         let m: f32 = val - c;
         let r: i32 = hue / 60;
 
