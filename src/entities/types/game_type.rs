@@ -1,5 +1,7 @@
 //! Contains the `GameType` entity variant
 
+use crate::entities::entity::EntityTrait;
+
 /// The game's genre
 #[derive(Debug)]
 pub enum GameGenre {
@@ -12,7 +14,8 @@ pub enum GameGenre {
 /// The game entity type.
 /// Used as a head of a `EntityTree`.
 #[derive(Debug)]
-pub struct GameType {
+pub struct Game {
     /// The game genre
     pub genre: GameGenre,
 }
+impl EntityTrait for Game {}

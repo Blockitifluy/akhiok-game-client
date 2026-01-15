@@ -33,7 +33,7 @@ pub mod window;
 use beryllium::video::{CreateWinArgs, GlSwapInterval};
 use core::{convert::TryInto, mem::size_of};
 use ogl33::*;
-use std::ptr;
+use std::{cell::RefCell, ptr, rc::Rc};
 
 use crate::{
     datatypes::{color::Color3, vectors::Vector3},
@@ -41,7 +41,7 @@ use crate::{
         entity::EntityType,
         entity_tree::EntityTree,
         traits::object_3d::Object3D,
-        types::{camera_type::CameraType, part_type::PartType},
+        types::{camera_type::Camera, io_service::InputService, part_type::Part},
     },
     gl_helper::*,
     mesh::*,
@@ -79,35 +79,36 @@ fn start_window() -> Window {
     win
 }
 
-fn init_test_tree(entity_tree: &mut EntityTree) {
+fn init_test_tree(entity_tree: Rc<RefCell<EntityTree>>) {
     let mesh = Mesh::load_mesh(include_str!("../assets/meshs/plane.mesh")).unwrap();
+    let bitmap = Texture::new(include_bytes!("../assets/awesomeface.png").to_vec());
 
-    let head = entity_tree.add_head();
+    let mut tree = entity_tree.borrow_mut();
+
+    let head = tree.add_head();
     println!("created entity tree's head: {}", head.borrow().get_uuid());
 
-    let mut part_type = Box::new(PartType::new(&mesh));
-    part_type.color = Color3::from_hex(0xff0000);
-
-    let bitmap = Texture::new(include_bytes!("../assets/awesomeface.png").to_vec());
+    let mut part_type = Part::new(&mesh);
     part_type.set_texture(bitmap);
+    part_type.color = Color3::from_hex(0xff0000);
 
     let mut head_borrow = head.borrow_mut();
 
-    let mut camera_type = CameraType::new(90.0, 0.1, 100.0);
+    let mut camera_type = Camera::new(90.0, 0.1, 100.0);
     camera_type.set_rotation(Vector3::new(0.0, 10.0, 0.0));
     camera_type.set_position(Vector3::forward() * -1.0);
 
-    let _ = entity_tree
+    let _ = tree
         .add_main_camera(Some(&mut head_borrow), camera_type)
         .unwrap();
 
-    let _ = entity_tree
+    let _ = tree
         .add_entity_with_parent("part-entity", EntityType::Part(part_type), &mut head_borrow)
         .unwrap();
 
-    let _ = entity_tree.add_entity_with_parent(
+    let _ = tree.add_entity_with_parent(
         "InputService",
-        EntityType::InputService(Box::default()),
+        EntityType::InputService(InputService::default()),
         &mut head_borrow,
     );
 }
@@ -136,14 +137,15 @@ fn enable_vertex_arrays() {
 /// main function
 fn main() {
     let win = start_window();
-    let mut entity_tree = EntityTree::default();
-    init_test_tree(&mut entity_tree);
+    let entity_tree = EntityTree::default();
+    let tree_cell = Rc::new(RefCell::new(entity_tree));
+    init_test_tree(tree_cell.clone());
 
     win.shader_program.use_program();
 
     enable_vertex_arrays();
 
     polygon_mode(gl_helper::PolygonMode::Fill);
-    win.render_loop(&entity_tree);
+    win.render_loop(tree_cell);
     win.shader_program.delete();
 }

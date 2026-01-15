@@ -2,11 +2,14 @@
 
 use ultraviolet::{Mat4, projection::perspective_gl};
 
-use crate::{datatypes::vectors::Vector3, entities::traits::object_3d::*};
+use crate::{
+    datatypes::vectors::Vector3,
+    entities::{entity::EntityTrait, traits::object_3d::*},
+};
 
 /// A camera used for rendering
 #[derive(Debug)]
-pub struct CameraType {
+pub struct Camera {
     /// The vertical field of view
     pub fov: f32,
     /// The transform of the camera
@@ -23,7 +26,7 @@ pub struct CameraType {
     position: Vector3,
     rotation: Vector3,
 }
-impl CameraType {
+impl Camera {
     /// Create a new `CameraType`.
     /// # Arguements
     /// - `fov`: the vertical field of view
@@ -58,7 +61,7 @@ impl CameraType {
     }
 }
 
-impl Object3D for CameraType {
+impl Object3D for Camera {
     fn calculate_transform(&self) -> Mat4 {
         calculate_transform(self)
     }
@@ -106,5 +109,11 @@ impl Object3D for CameraType {
 
     fn set_up(&mut self, up: Vector3) {
         self.up = up;
+    }
+}
+
+impl EntityTrait for Camera {
+    fn update(&mut self, delta: f32) {
+        println!("camera update {}", delta);
     }
 }

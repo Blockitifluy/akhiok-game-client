@@ -1,6 +1,6 @@
 //! Defines datatypes for colors. Stores:
 //! - `Color3`: *RGB*
-use std::{fmt, str::FromStr};
+use std::fmt;
 
 /// The floating point type used for a color's components
 pub type ColorComp = f32;

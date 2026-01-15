@@ -1,6 +1,6 @@
 //! Used for the `Window` helper structure. Containing various GL objects.
 
-use std::ptr;
+use std::{cell::RefCell, ptr, rc::Rc};
 
 use beryllium::{
     events::Event,
@@ -9,10 +9,9 @@ use beryllium::{
     *,
 };
 use ogl33::*;
-use uuid::Uuid;
 
 use crate::{
-    entities::{entity::EntityType, entity_tree::EntityTree},
+    entities::{entity::EntityType, entity_tree::EntityTree, types::part_type::Part},
     gl_helper::*,
 };
 
@@ -113,15 +112,7 @@ impl Window {
         }
     }
 
-    fn render_part(&self, entity_tree: &EntityTree, part_id: &Uuid) {
-        let entity_null = entity_tree.get_entity(*part_id);
-        let Some(entity) = entity_null else {
-            return;
-        };
-        let EntityType::Part(part) = entity.get_type() else {
-            return;
-        };
-
+    fn render_part(&self, part: &Part) {
         if !part.visable {
             return;
         }
@@ -181,15 +172,20 @@ impl Window {
     /// Executes the render loop
     /// # Note
     /// The loop doesn't run in a different thread
-    pub fn render_loop(&self, entity_tree: &EntityTree) {
+    pub fn render_loop(&self, tree_cell: Rc<RefCell<EntityTree>>) {
+        let entity_tree = tree_cell.borrow();
         let head_binding = entity_tree.get_head().unwrap();
+
         let head = head_binding.borrow();
         let input_service_entity_null = entity_tree.find_first_child_mut(&head, "InputService");
         let Some(mut input_service_entity) = input_service_entity_null else {
             panic!("couldn't find service Entity InputService");
         };
 
+        let mut last_frame = 0_u32;
         'main_loop: loop {
+            let current_frame = self.sdl.get_ticks();
+            let delta = (current_frame - last_frame) as f32 / 1000.0;
             let EntityType::InputService(input_service) = input_service_entity.get_type_mut()
             else {
                 panic!("couldn't borrow InputService");
@@ -229,19 +225,34 @@ impl Window {
                 self.shader_program
                     .set_matrix4(null_str!("projection"), projection);
                 self.shader_program.set_matrix4(null_str!("view"), view);
-
-                for part_id in &entity_tree.parts {
-                    self.render_part(entity_tree, part_id);
-                }
             }
 
+            for id in entity_tree.entity_map.keys() {
+                let entity_null_ref = entity_tree.get_entity_rc(*id);
+                let Some(entity_ref) = entity_null_ref else {
+                    continue;
+                };
+
+                let entity_res = entity_ref.try_borrow_mut();
+                let Ok(mut entity) = entity_res else {
+                    continue;
+                };
+
+                if let EntityType::Part(part_type) = entity.get_type() {
+                    self.render_part(part_type);
+                }
+
+                entity.get_type_mut().update(delta); // TODO: replace delta
+            }
             self.window.swap_window();
 
             let EntityType::InputService(input_service) = input_service_entity.get_type_mut()
             else {
                 panic!("couldn't borrow InputService");
             };
+
             input_service.mark_cleanup();
+            last_frame = current_frame;
         }
     }
 

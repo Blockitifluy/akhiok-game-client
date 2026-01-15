@@ -4,7 +4,7 @@ use ultraviolet::Mat4;
 
 use crate::{
     datatypes::{color::Color3, vectors::Vector3},
-    entities::traits::object_3d::*,
+    entities::{entity::EntityTrait, traits::object_3d::*},
     mesh::Mesh,
     texture::Texture,
 };
@@ -12,7 +12,7 @@ use crate::{
 /// The part entity type.
 /// Used as a building block.
 #[derive(Debug)]
-pub struct PartType {
+pub struct Part {
     /// The mesh of the part
     mesh: Mesh,
     texture: Option<Texture>,
@@ -33,7 +33,7 @@ pub struct PartType {
     /// The size of the part
     size: Vector3,
 }
-impl PartType {
+impl Part {
     /// Creates a new part.
     /// # Arguements
     /// - `mesh`: a borrowed mesh
@@ -123,7 +123,7 @@ impl PartType {
     }
 }
 
-impl Object3D for PartType {
+impl Object3D for Part {
     fn calculate_transform(&self) -> Mat4 {
         calculate_transform_with_size(self)
     }
@@ -175,7 +175,7 @@ impl Object3D for PartType {
     }
 }
 
-impl Object3DSize for PartType {
+impl Object3DSize for Part {
     fn get_size(&self) -> Vector3 {
         self.size
     }
@@ -184,3 +184,5 @@ impl Object3DSize for PartType {
         self.size = size;
     }
 }
+
+impl EntityTrait for Part {}

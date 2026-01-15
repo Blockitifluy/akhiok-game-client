@@ -11,6 +11,7 @@ dependencies = [
  "mlua",
  "ogl33",
  "stb_image_rust",
+ "trait_enum",
  "ultraviolet",
  "uuid",
 ]
@@ -462,6 +463,12 @@ dependencies = [
  "quote",
  "unicode-ident",
 ]
+
+[[package]]
+name = "trait_enum"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "130dd741d3c71f76d031e58caffff3624eaaa2db9bd8c4b05406a71885300fc7"
 
 [[package]]
 name = "ultraviolet"

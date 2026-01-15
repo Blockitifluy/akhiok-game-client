@@ -5,6 +5,8 @@ use std::collections::HashMap;
 
 use beryllium::events::SDL_Keycode as Keycode;
 
+use crate::entities::entity::EntityTrait;
+
 /// The status of a key on a keyboard
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub enum PressedStatus {
@@ -181,3 +183,5 @@ impl Default for InputService {
         }
     }
 }
+
+impl EntityTrait for InputService {}

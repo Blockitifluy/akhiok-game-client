@@ -3,24 +3,41 @@
 use std::fmt;
 use uuid::Uuid;
 
-use crate::entities::types as ent_types;
+use crate::entities::types::{
+    camera_type::Camera, game_type::Game, io_service::InputService, part_type::Part,
+};
 
-/// The type of entity.
-/// The enum stores a `Box` pointer to a struct
+// TODO: Wrap EntityType's items with Box<>
+trait_enum::trait_enum! {
+/// The type of entity
 #[derive(Debug)]
-pub enum EntityType {
+pub enum EntityType: EntityTrait {
     /// The base class for enums stores `nothing`.
     Base,
     /// The game entity.
     /// Used as a head of a EntityTree.
-    Game(Box<ent_types::game_type::GameType>),
+    Game,
     /// A building block entity.
-    Part(Box<ent_types::part_type::PartType>),
+    Part,
     /// A camera used for rendering
-    Camera(Box<ent_types::camera_type::CameraType>),
+    Camera,
     /// A service providing Input and Output support
-    InputService(Box<ent_types::io_service::InputService>),
+    InputService,
 }
+}
+
+/// A trait that every entity should use.
+pub trait EntityTrait {
+    /// Gets called every frame.
+    /// # Arguements
+    /// - `delta`: the time between the last to second to last frame
+    fn update(&mut self, _delta: f32) {}
+}
+
+/// The base entity: has no propetries or unique methods.
+#[derive(Debug)]
+pub struct Base;
+impl EntityTrait for Base {}
 
 /// An entity, used as a node in a tree hierarchry (`EntityTree`).
 /// Used a container of `EntityType`
@@ -33,7 +50,7 @@ pub struct Entity {
     /// The non-unique name of the entity.
     name: String,
     /// The type of entity
-    entity_type: EntityType,
+    entity_type: Box<EntityType>,
     /// A unique identifier of the entity
     uuid: Uuid,
 }
@@ -47,7 +64,7 @@ impl Entity {
     /// - `entity_type`: The type of the Entity
     /// # Returns
     /// `Self`
-    pub fn new(name: &str, entity_type: EntityType) -> Self {
+    pub fn new(name: &str, entity_type: Box<EntityType>) -> Self {
         let name_str = name.to_string();
         Self {
             parent_id: None,
@@ -95,7 +112,7 @@ impl Default for Entity {
     fn default() -> Self {
         Self {
             name: "entity".to_string(),
-            entity_type: EntityType::Base,
+            entity_type: Box::new(EntityType::Base(Base)),
             uuid: Uuid::new_v4(),
             children_id: vec![],
             parent_id: None,

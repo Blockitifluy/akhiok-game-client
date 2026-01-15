@@ -12,8 +12,8 @@ use uuid::Uuid;
 use crate::entities::{
     entity::{Entity, EntityType},
     types::{
-        camera_type::CameraType,
-        game_type::{GameGenre, GameType},
+        camera_type::Camera,
+        game_type::{Game, GameGenre},
     },
 };
 
@@ -31,7 +31,10 @@ pub struct EntityTree {
     pub main_camera: Option<Uuid>,
     /// The indentifier for every part.
     pub parts: Vec<Uuid>,
-    entity_map: HashMap<Uuid, Rc<RefCell<Entity>>>,
+    /// A hashmap of all entity as values and their ID's as keys
+    /// # Note
+    /// Not to be edited directly use the provided methods instead.
+    pub entity_map: HashMap<Uuid, Rc<RefCell<Entity>>>,
 }
 impl EntityTree {
     /// Creates a new entity.
@@ -41,7 +44,7 @@ impl EntityTree {
     /// # Returns
     /// A reference counted RefCell of the `Entity`.
     pub fn add_entity(&mut self, name: &str, entity_type: EntityType) -> Rc<RefCell<Entity>> {
-        let entity = Rc::new(RefCell::new(Entity::new(name, entity_type)));
+        let entity = Rc::new(RefCell::new(Entity::new(name, Box::new(entity_type))));
         let id = entity.borrow().get_uuid();
         self.entity_map.insert(id, entity.clone());
         if let EntityType::Part(_) = entity.borrow().get_type() {
@@ -77,7 +80,7 @@ impl EntityTree {
     pub fn add_head(&mut self) -> Rc<RefCell<Entity>> {
         let head = Rc::new(RefCell::new(Entity::new(
             "Game",
-            EntityType::Game(Box::new(GameType {
+            Box::new(EntityType::Game(Game {
                 genre: GameGenre::Action,
             })),
         )));
@@ -106,13 +109,11 @@ impl EntityTree {
     pub fn add_main_camera(
         &mut self,
         parent: Option<&mut Entity>,
-        camera_type: CameraType,
+        camera_type: Camera,
     ) -> Option<Rc<RefCell<Entity>>> {
-        let camera_type_box = Box::new(camera_type);
-
         let camera = Rc::new(RefCell::new(Entity::new(
             "Camera",
-            EntityType::Camera(camera_type_box),
+            Box::new(EntityType::Camera(camera_type)),
         )));
         let mut camera_borrow = camera.borrow_mut();
         if let Err(err) = self.set_parent(camera_borrow.deref_mut(), parent) {
@@ -146,11 +147,8 @@ impl EntityTree {
     /// # Returns
     /// An option to a reference to an entity
     pub fn get_entity(&self, id: Uuid) -> Option<Ref<Entity>> {
-        let entity_null = self.entity_map.get(&id);
-        if let Some(entity) = entity_null {
-            return Some(entity.borrow());
-        }
-        None
+        let entity = self.entity_map.get(&id)?;
+        Some(entity.borrow())
     }
 
     /// Gets an entity (as an mutable reference) based on the `id`.
@@ -159,11 +157,32 @@ impl EntityTree {
     /// # Returns
     /// An option to a mutable reference to an entity
     pub fn get_entity_mut(&self, id: Uuid) -> Option<RefMut<Entity>> {
-        let entity_null = self.entity_map.get(&id);
-        if let Some(entity) = entity_null {
-            return Some(entity.borrow_mut());
-        }
-        None
+        let entity = self.entity_map.get(&id)?;
+        Some(entity.borrow_mut())
+    }
+
+    /// Gets an entity (as an reference counted ref cell) based on the `id`.
+    /// # Arguements
+    /// - `id`: The unique identitier of the entity
+    /// # Returns
+    /// An option of a reference counted ref cell to an entity.
+    pub fn get_entity_rc(&self, id: Uuid) -> Option<Rc<RefCell<Entity>>> {
+        let entity = self.entity_map.get(&id)?;
+        Some(entity.clone())
+    }
+
+    /// Gets all entities inside of the tree.
+    /// # Returns
+    /// A collection of references to an entity
+    pub fn get_entities(&self) -> Vec<Ref<Entity>> {
+        self.entity_map.values().map(|e| e.borrow()).collect()
+    }
+
+    /// Gets all entities inside of the tree.
+    /// # Returns
+    /// A collection of mutable references to an entity
+    pub fn get_entities_mut(&mut self) -> Vec<RefMut<Entity>> {
+        self.entity_map.values().map(|e| e.borrow_mut()).collect()
     }
 
     // Parent
