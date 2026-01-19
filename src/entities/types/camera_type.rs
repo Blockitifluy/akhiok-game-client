@@ -1,14 +1,14 @@
 //! Contains the `CameraType` entity variant
 
-use ultraviolet::{Mat4, projection::perspective_gl};
-
 use crate::{
     datatypes::vectors::Vector3,
     entities::{entity::EntityTrait, traits::object_3d::*},
 };
+use derive_akhoik_ge::Object3D;
+use ultraviolet::{Mat4, projection::perspective_gl};
 
 /// A camera used for rendering
-#[derive(Debug)]
+#[derive(Debug, Object3D)]
 pub struct Camera {
     /// The vertical field of view
     pub fov: f32,
@@ -61,59 +61,4 @@ impl Camera {
     }
 }
 
-impl Object3D for Camera {
-    fn calculate_transform(&self) -> Mat4 {
-        calculate_transform(self)
-    }
-
-    fn recalculate_transform(&mut self) {
-        self.transform = calculate_transform(self);
-    }
-
-    fn get_position(&self) -> Vector3 {
-        self.position
-    }
-
-    fn set_position(&mut self, pos: Vector3) {
-        self.position = pos;
-        self.recalculate_transform();
-    }
-
-    fn get_rotation(&self) -> Vector3 {
-        self.rotation
-    }
-
-    fn set_rotation(&mut self, rot: Vector3) {
-        self.rotation = rot;
-    }
-
-    fn get_front(&self) -> Vector3 {
-        self.front
-    }
-
-    fn set_front(&mut self, front: Vector3) {
-        self.front = front;
-    }
-
-    fn get_right(&self) -> Vector3 {
-        self.right
-    }
-
-    fn set_right(&mut self, right: Vector3) {
-        self.right = right;
-    }
-
-    fn get_up(&self) -> Vector3 {
-        self.up
-    }
-
-    fn set_up(&mut self, up: Vector3) {
-        self.up = up;
-    }
-}
-
-impl EntityTrait for Camera {
-    fn update(&mut self, delta: f32) {
-        println!("camera update {}", delta);
-    }
-}
+impl EntityTrait for Camera {}

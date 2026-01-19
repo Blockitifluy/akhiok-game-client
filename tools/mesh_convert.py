@@ -10,6 +10,12 @@ from pathlib import Path
 VALID_NAMES = ["v", "f", "vt"]
 
 def convert_obj_to_mesh(txt: str) -> str:
+    """Converts a obj file's contents to the native mesh format.
+    Arguements:
+    - `txt`: .obj file contents
+    Returns:
+    The native mesh format
+    """
     tex_coords: str = ""
     indices: str = ""
     vertices: str = ""
@@ -38,15 +44,27 @@ def convert_obj_to_mesh(txt: str) -> str:
 """
     return b
         
-
 def convert_obj_to_mesh_file(path: str) -> str:
+    """Converts a obj file to the native mesh format.
+    Arguements:
+    - `txt`: .obj file path
+    Returns:
+    The native mesh format
+    """
     cont = ""
     with open(path, "r") as f:
         cont = f.read()
     return convert_obj_to_mesh(cont)
 
-if __name__ == "__main__":
-    args = sys.argv[1:]
+def parse_args(args: list[str]) -> tuple[list[str], list[str]]:
+    """Parses the arguements into input and output.
+    Arguements:
+    - `args`: the script's arguements
+    Returns:
+    A tuple of:
+    - input,
+    - output
+    """
     input_args: list[str] = []
     output_args: list[str] = []
     i = 0
@@ -63,11 +81,17 @@ if __name__ == "__main__":
             continue
         input_args.append(arg)
         i += 1
-    is_single = len(output_args) == 1
-    if not is_single and len(output_args) != len(input_args):
-        raise Exception("invalid output: output should be equal to inputs or be one")
-    is_directory = is_single and len(output_args) == 1 # if False, then every output has a coreposonding input
-    
+
+    return (input_args, output_args)
+
+def convert_write_io(input_args: list[str], output_args: list[str], is_single: bool, is_directory: bool):
+    """Converts the input files and writes it into output files.
+    Arguements:
+    - `input_args`: the input files
+    - `output_args`: the output files
+    - `is_single`: is this one input and output arguements?
+    - `is_directory`: is there one output to multiple inputs.
+    """
     for i, input_path in enumerate(input_args):
         data = convert_obj_to_mesh_file(input_path)
         if is_single:
@@ -81,5 +105,14 @@ if __name__ == "__main__":
             with open(output_args[i], "w") as f:
                 f.write(data)
 
-            
+if __name__ == "__main__":
+    args = sys.argv[1:]
+
+    input_args, output_args = parse_args(args)
+    is_single = len(output_args) == 1
+    if not is_single and len(output_args) != len(input_args):
+        raise Exception("invalid output: output should be equal to inputs or be one")
+    is_directory = is_single and len(output_args) == 1 # if False, then every output has a coreposonding input
+    
+    convert_write_io(input_args, output_args, is_single, is_directory)
 

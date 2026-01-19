@@ -1,5 +1,6 @@
 //! Contains the `PartType` entity which is used to make a visable object like a building block.
 
+use derive_akhoik_ge::{Object3D, Object3DSize};
 use ultraviolet::Mat4;
 
 use crate::{
@@ -11,7 +12,7 @@ use crate::{
 
 /// The part entity type.
 /// Used as a building block.
-#[derive(Debug)]
+#[derive(Debug, Object3D, Object3DSize)]
 pub struct Part {
     /// The mesh of the part
     mesh: Mesh,
@@ -120,68 +121,6 @@ impl Part {
         let mesh = Mesh::load_mesh_from_file(path)?;
         self.mesh = mesh;
         Ok(())
-    }
-}
-
-impl Object3D for Part {
-    fn calculate_transform(&self) -> Mat4 {
-        calculate_transform_with_size(self)
-    }
-
-    fn recalculate_transform(&mut self) {
-        self.transform = self.calculate_transform();
-    }
-
-    fn get_position(&self) -> Vector3 {
-        self.position
-    }
-
-    fn set_position(&mut self, pos: Vector3) {
-        self.position = pos;
-        self.recalculate_transform();
-    }
-
-    fn get_rotation(&self) -> Vector3 {
-        self.rotation
-    }
-
-    fn set_rotation(&mut self, rot: Vector3) {
-        self.rotation = rot;
-        self.recalculate_transform();
-    }
-
-    fn get_front(&self) -> Vector3 {
-        self.front
-    }
-
-    fn set_front(&mut self, front: Vector3) {
-        self.front = front;
-    }
-
-    fn get_right(&self) -> Vector3 {
-        self.right
-    }
-
-    fn set_right(&mut self, right: Vector3) {
-        self.right = right;
-    }
-
-    fn get_up(&self) -> Vector3 {
-        self.up
-    }
-
-    fn set_up(&mut self, up: Vector3) {
-        self.up = up;
-    }
-}
-
-impl Object3DSize for Part {
-    fn get_size(&self) -> Vector3 {
-        self.size
-    }
-
-    fn set_size(&mut self, size: Vector3) {
-        self.size = size;
     }
 }
 

@@ -77,7 +77,7 @@ impl Texture {
     }
 
     /// Frees the texture.
-    pub fn free(&self) {
+    fn free(&self) {
         unsafe {
             stb_image_rust::c_runtime::free(self.pixels);
         }

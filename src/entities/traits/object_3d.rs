@@ -1,8 +1,7 @@
 //! Contains the traits `Object3D` and `Object3DSize`. Useful for handling transformations for
 //! entities.
-use ultraviolet::{Mat4, Vec3};
-
 use crate::datatypes::vectors::Vector3;
+use ultraviolet::{Mat4, Vec3};
 
 /// A trait for any 3D object with a position and rotation.
 pub trait Object3D {

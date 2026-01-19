@@ -8,6 +8,7 @@ version = "0.2.0"
 dependencies = [
  "beryllium",
  "bytemuck",
+ "derive_akhoik_ge",
  "mlua",
  "ogl33",
  "stb_image_rust",
@@ -104,6 +105,14 @@ name = "cfg-if"
 version = "1.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9330f8b2ff13f34540b44e946ef35111825727b38d33286ef986142615121801"
+
+[[package]]
+name = "derive_akhoik_ge"
+version = "0.1.0"
+dependencies = [
+ "quote",
+ "syn",
+]
 
 [[package]]
 name = "either"
@@ -344,9 +353,9 @@ checksum = "331cd2c60ff9d3f52f319b935028b91be5fadb93ca413f408747d91dca3aff28"
 
 [[package]]
 name = "quote"
-version = "1.0.42"
+version = "1.0.43"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a338cc41d27e6cc6dce6cefc13a0729dfbb81c262b1f519331575dd80ef3067f"
+checksum = "dc74d9a594b72ae6656596548f56f667211f8a97b3d4c3d467150794690dc40a"
 dependencies = [
  "proc-macro2",
 ]
@@ -455,9 +464,9 @@ checksum = "d682a002ab01d5e09f47d22cfe4a55a8451cdaef5b0f87d6c8b8c3bc4360b6aa"
 
 [[package]]
 name = "syn"
-version = "2.0.112"
+version = "2.0.114"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "21f182278bf2d2bcb3c88b1b08a37df029d71ce3d3ae26168e3c653b213b99d4"
+checksum = "d4d107df263a3013ef9b1879b0df87d706ff80f65a86ea879bd9c31f9b307c2a"
 dependencies = [
  "proc-macro2",
  "quote",

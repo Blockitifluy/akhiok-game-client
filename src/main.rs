@@ -1,7 +1,8 @@
 //! This the entry point of *akhiok-engine game client*
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 #![warn(missing_docs)]
-#![warn(clippy::all)]
+#![deny(clippy::all)]
+#![allow(mismatched_lifetime_syntaxes)]
 
 pub mod gl_helper;
 pub mod mesh;

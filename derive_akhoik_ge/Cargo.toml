@@ -1,0 +1,11 @@
+[package]
+name = "derive_akhoik_ge"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+quote = "1.0.43"
+syn = "2.0.114"
+
+[lib]
+proc-macro = true
