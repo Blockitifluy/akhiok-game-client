@@ -1,6 +1,6 @@
 //! Defines datatypes for colors. Stores:
 //! - `Color3`: *RGB*
-use std::fmt;
+use std::{error::Error, fmt};
 
 /// The floating point type used for a color's components
 pub type ColorComp = f32;
@@ -15,8 +15,52 @@ pub struct Color3 {
     /// Blue component of the color
     pub b: ColorComp,
 }
-
 impl Color3 {
+    /// A pure white color
+    pub const fn white() -> Color3 {
+        Color3 {
+            r: 1.0,
+            g: 1.0,
+            b: 1.0,
+        }
+    }
+
+    /// A pure black color
+    pub const fn black() -> Color3 {
+        Color3 {
+            r: 0.0,
+            g: 0.0,
+            b: 0.0,
+        }
+    }
+
+    /// A pure red color
+    pub const fn red() -> Color3 {
+        Color3 {
+            r: 1.0,
+            g: 0.0,
+            b: 0.0,
+        }
+    }
+
+    /// A pure green color
+    pub const fn green() -> Color3 {
+        Color3 {
+            r: 0.0,
+            g: 0.0,
+            b: 0.0,
+        }
+    }
+
+    /// A pure blue color
+    pub const fn blue() -> Color3 {
+        Color3 {
+            r: 0.0,
+            g: 0.0,
+            b: 1.0,
+        }
+    }
+
     /// Creates a new color, with parameters all between the value of 0.0 and 1.0
     /// # Arguements
     /// - `r`: red
@@ -119,17 +163,17 @@ impl Color3 {
     /// A result, either:
     /// - `Color3`,
     /// - An error message
-    pub fn from_hsv(hue: i32, sat: f32, val: f32) -> Result<Self, String> {
+    pub fn from_hsv(hue: i32, sat: f32, val: f32) -> Result<Self, HSVConvertErr> {
         if !(0..360).contains(&hue) {
-            return Err("hue not in range of 0 to 360".to_string());
+            return Err(HSVConvertErr::HueOutOfRange);
         }
 
-        if !(0.0..1.0).contains(&sat) {
-            return Err("satruation not in range of 0 to 1".to_string());
+        if !(0.0..=1.0).contains(&sat) {
+            return Err(HSVConvertErr::SatruationOutOfRange);
         }
 
-        if !(0.0..1.0).contains(&val) {
-            return Err("value not in range of 0 to 1".to_string());
+        if !(0.0..=1.0).contains(&val) {
+            return Err(HSVConvertErr::ValueOutOfRange);
         }
 
         let hue_f = hue as f32;
@@ -139,56 +183,44 @@ impl Color3 {
         let m: f32 = val - c;
         let r: i32 = hue / 60;
 
-        if !(0..=5).contains(&r) {
-            return Err("hue out of range of 0 to 360".to_string());
-        }
-
-        let (r_q, g_q, b_q);
-        match r {
-            0 => {
-                r_q = c;
-                g_q = x;
-                b_q = 0.0;
-            }
-            1 => {
-                r_q = x;
-                g_q = c;
-                b_q = 0.0;
-            }
-            2 => {
-                r_q = 0.0;
-                g_q = c;
-                b_q = x;
-            }
-            3 => {
-                r_q = 0.0;
-                g_q = x;
-                b_q = c;
-            }
-            4 => {
-                r_q = x;
-                g_q = 0.0;
-                b_q = c;
-            }
-            5 => {
-                r_q = c;
-                g_q = 0.0;
-                b_q = 0.0;
-            }
-            _ => panic!("hue was out of range even when multiple checks were in place"),
-        }
+        let (r_q, g_q, b_q) = match r {
+            0 => (c, x, 0.0),
+            1 => (x, c, 0.0),
+            2 => (0.0, c, x),
+            3 => (0.0, x, c),
+            4 => (x, 0.0, c),
+            5 => (c, 0.0, x),
+            _ => unreachable!(),
+        };
 
         Ok(Self::new(r_q + m, g_q + m, b_q + m).unwrap())
     }
 }
 
+/// An error thrown inside HSV color space conversion.
+/// # Used in
+/// - `Color3.from_hsv`
+#[derive(Debug)]
+pub enum HSVConvertErr {
+    /// When the hue is not in the range of 0 <= hue < 360.
+    HueOutOfRange,
+    /// When the satruation is not in the range of 0.0 <= satruation <= 1.0.
+    SatruationOutOfRange,
+    /// When the value is not in the range of 0.0 <= value <= 1.0/
+    ValueOutOfRange,
+}
+
+impl fmt::Display for HSVConvertErr {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "error when converting HSV color space: {self:?}")
+    }
+}
+
+impl Error for HSVConvertErr {}
+
 impl Default for Color3 {
     fn default() -> Self {
-        Self {
-            r: 0.0,
-            g: 0.0,
-            b: 0.0,
-        }
+        Self::white()
     }
 }
 

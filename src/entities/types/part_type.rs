@@ -6,7 +6,7 @@ use ultraviolet::Mat4;
 use crate::{
     datatypes::{color::Color3, vectors::Vector3},
     entities::{entity::EntityTrait, traits::object_3d::*},
-    mesh::Mesh,
+    mesh::{Mesh, MeshParseError},
     texture::Texture,
 };
 
@@ -45,16 +45,8 @@ impl Part {
     pub fn new(mesh: &Mesh) -> Self {
         let mut construct = Self {
             mesh: mesh.clone(),
-            color: Color3::new(1.0, 1.0, 1.0).unwrap(),
             visable: true,
-            position: Vector3::default(),
-            rotation: Vector3::default(),
-            size: Vector3::new(1.0, 1.0, 1.0),
-            transform: Mat4::identity(),
-            texture: None,
-            front: Vector3::forward(),
-            right: Vector3::right(),
-            up: Vector3::up(),
+            ..Default::default()
         };
 
         construct.recalculate_transform();
@@ -117,7 +109,7 @@ impl Part {
     /// let mesh = Mesh::load_mesh_from_file(path)?;
     /// part.load_mesh(mesh);
     /// ```
-    pub fn load_mesh_from_file(&mut self, path: &str) -> Result<(), String> {
+    pub fn load_mesh_from_file(&mut self, path: &str) -> Result<(), MeshParseError> {
         let mesh = Mesh::load_mesh_from_file(path)?;
         self.mesh = mesh;
         Ok(())
@@ -125,3 +117,21 @@ impl Part {
 }
 
 impl EntityTrait for Part {}
+
+impl Default for Part {
+    fn default() -> Self {
+        Self {
+            mesh: Mesh::default(),
+            texture: None,
+            color: Color3::default(),
+            position: Vector3::zero(),
+            rotation: Vector3::zero(),
+            transform: Mat4::identity(),
+            visable: true,
+            front: Vector3::forward(),
+            right: Vector3::right(),
+            up: Vector3::up(),
+            size: Vector3::one(),
+        }
+    }
+}

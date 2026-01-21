@@ -42,7 +42,12 @@ use crate::{
         entity::EntityType,
         entity_tree::EntityTree,
         traits::object_3d::Object3D,
-        types::{camera_type::Camera, io_service::InputService, part_type::Part},
+        types::{
+            camera_type::Camera,
+            game_type::{Game, GameGenre},
+            io_service::InputService,
+            part_type::Part,
+        },
     },
     gl_helper::*,
     mesh::*,
@@ -86,22 +91,24 @@ fn init_test_tree(entity_tree: Rc<RefCell<EntityTree>>) {
 
     let mut tree = entity_tree.borrow_mut();
 
-    let head = tree.add_head();
+    let game_type = Game::new(GameGenre::Adventure);
+    let head = tree.add_head(game_type);
     println!("created entity tree's head: {}", head.borrow().get_uuid());
 
     let mut part_type = Part::new(&mesh);
     part_type.set_texture(bitmap);
     part_type.color = Color3::from_hex(0xff0000);
 
-    let mut head_borrow = head.borrow_mut();
+    drop(head);
 
     let mut camera_type = Camera::new(90.0, 0.1, 100.0);
     camera_type.set_rotation(Vector3::new(0.0, 10.0, 0.0));
     camera_type.set_position(Vector3::forward() * -1.0);
 
-    let _ = tree
-        .add_main_camera(Some(&mut head_borrow), camera_type)
-        .unwrap();
+    let _ = tree.add_main_camera(camera_type).unwrap();
+
+    let head = tree.get_head().unwrap();
+    let mut head_borrow = head.borrow_mut();
 
     let _ = tree
         .add_entity_with_parent("part-entity", EntityType::Part(part_type), &mut head_borrow)

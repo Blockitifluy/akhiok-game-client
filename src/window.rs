@@ -242,7 +242,17 @@ impl Window {
                     self.render_part(part_type);
                 }
 
-                entity.get_type_mut().update(delta); // TODO: replace delta
+                let is_newly_created = entity.newly_created;
+
+                let ent_type = entity.get_type_mut();
+
+                if is_newly_created {
+                    ent_type.start();
+                }
+
+                ent_type.update(delta);
+
+                entity.newly_created = false;
             }
             self.window.swap_window();
 

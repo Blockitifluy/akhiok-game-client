@@ -11,10 +11,7 @@ use uuid::Uuid;
 
 use crate::entities::{
     entity::{Entity, EntityType},
-    types::{
-        camera_type::Camera,
-        game_type::{Game, GameGenre},
-    },
+    types::{camera_type::Camera, game_type::Game},
 };
 
 // TODO: Add Child, Descendent and Ancestor iterators
@@ -77,14 +74,12 @@ impl EntityTree {
     /// Adds a new head of the `Game` entity type.
     /// # Returns
     /// A reference counted RefCell of the `Entity`.
-    pub fn add_head(&mut self) -> Rc<RefCell<Entity>> {
+    pub fn add_head(&mut self, game_type: Game) -> Rc<RefCell<Entity>> {
         let head = Rc::new(RefCell::new(Entity::new(
             "Game",
-            Box::new(EntityType::Game(Game {
-                genre: GameGenre::Action,
-            })),
+            Box::new(EntityType::Game(game_type)),
         )));
-        let head_borrow = head.borrow();
+        let head_borrow = head.borrow_mut();
         let id = head_borrow.get_uuid();
         self.head = Some(id);
         self.entity_map.insert(id, head.clone());
@@ -102,21 +97,20 @@ impl EntityTree {
 
     /// Adds a new main camera of the `Camera` entity type.
     /// # Arguements
-    /// - `parent`: the camera's parent
     /// - `camera_type`: the camera_type variant
     /// # Returns
     /// An option of a reference counted RefCell of the camera `Entity`
-    pub fn add_main_camera(
-        &mut self,
-        parent: Option<&mut Entity>,
-        camera_type: Camera,
-    ) -> Option<Rc<RefCell<Entity>>> {
+    pub fn add_main_camera(&mut self, camera_type: Camera) -> Option<Rc<RefCell<Entity>>> {
         let camera = Rc::new(RefCell::new(Entity::new(
             "Camera",
             Box::new(EntityType::Camera(camera_type)),
         )));
+
+        let head = self.get_head().unwrap();
+        let mut head_borrow = head.borrow_mut();
+
         let mut camera_borrow = camera.borrow_mut();
-        if let Err(err) = self.set_parent(camera_borrow.deref_mut(), parent) {
+        if let Err(err) = self.set_parent(&mut camera_borrow, Some(&mut head_borrow)) {
             println!("couldn't parent camera: {}", err);
             return None;
         }
@@ -125,6 +119,8 @@ impl EntityTree {
 
         self.main_camera = Some(id);
         self.entity_map.insert(id, camera.clone());
+
+        // camera_borrow.get_type_mut().start(self);
         Some(camera.clone())
     }
 

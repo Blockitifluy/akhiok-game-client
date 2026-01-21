@@ -1,6 +1,13 @@
 //! Used for mesh creation and definition.
 
-use std::{default::Default, fs, io::Read, vec::*};
+use core::fmt;
+use std::{
+    default::Default,
+    error::Error,
+    fs,
+    io::{self, Read},
+    vec::*,
+};
 
 use crate::datatypes::vectors::*;
 
@@ -65,16 +72,51 @@ impl VertexData {
     }
 }
 
+/// The section of the mesh file
 #[derive(PartialEq, Eq, Debug)]
-enum MeshSectionType {
+pub enum MeshSectionType {
+    /// Vertices
     Vertices,
+    /// Indices
     Indices,
+    /// Texture Coordinates
     TexCoord,
+    /// None
     None,
 }
+impl MeshSectionType {
+    /// Gets the `MeshSectionType` from the name.
+    ///
+    /// # Arguements
+    /// - `name`: the name of the section type
+    /// # Returns
+    /// A section type enum, returns `MeshSectionType::None` if it's not valid.
+    /// # Note
+    /// The name needs to be exact e.g. _Vertices_ for the `Vertices` enum.
+    fn from_name(name: &str) -> Self {
+        match name {
+            Mesh::VERTICES_SECTION_NAME => MeshSectionType::Vertices,
+            Mesh::INDICES_SECTION_NAME => MeshSectionType::Indices,
+            Mesh::TEXCOORD_SECTION_NAME => MeshSectionType::TexCoord,
+            _ => MeshSectionType::None,
+        }
+    }
+}
 
+macro_rules! section_to_raw_fn {
+    ($current_section:expr, $section_name:expr, $data:expr, $pos_data:expr, $ind_data:expr, $texcoord_data:expr) => {{
+        match $current_section {
+            MeshSectionType::Vertices => Self::load_raw_vertices($data.as_str(), &mut $pos_data),
+            MeshSectionType::Indices => Self::load_raw_indices($data.as_str(), &mut $ind_data),
+            MeshSectionType::TexCoord => {
+                Self::load_raw_texcoord($data.as_str(), &mut $texcoord_data)
+            }
+            _ => Err(MeshParseError::InvalidSectionType($section_name.clone())),
+        }
+    }};
+}
 /// A collection of veretices and indices that defines the shape of  a object's surface,
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct Mesh {
     /// A vector of 3D points and other vector data.
     pub vertices: Vec<VertexData>,
@@ -113,7 +155,7 @@ impl Mesh {
     const INDICES_SECTION_NAME: &str = "Indices";
     const TEXCOORD_SECTION_NAME: &str = "TexCoord";
 
-    fn load_raw_vertices(inp: &str, out: &mut Vec<Vector3>) -> Result<(), String> {
+    fn load_raw_vertices(inp: &str, out: &mut Vec<Vector3>) -> Result<(), MeshParseError> {
         let mut swap: u8 = 0; // 0 is x, 1 is y and 2 is z
         let (mut x, mut y) = (0.0, 0.0); // z is not need
         let mut num_b = String::with_capacity(8);
@@ -123,20 +165,21 @@ impl Mesh {
             let is_whitespace = c.is_whitespace();
             let is_valid_num = c == '.' || c == '-' || c.is_numeric();
             if !is_whitespace && !is_valid_num {
-                return Err(format!(
-                    "invalid data in vertices: invalid character at {}",
-                    i
-                ));
+                return Err(MeshParseError::InvalidSymbol {
+                    at: i,
+                    section: MeshSectionType::Vertices,
+                });
             }
 
             if is_whitespace && !num_b.is_empty() {
                 // compute
                 let v_ex = num_b.parse::<f32>();
                 let Ok(v) = v_ex else {
-                    return Err(format!(
-                        "couldn't parse value at {}: invalid floating point value ({})",
-                        i, num_b
-                    ));
+                    return Err(MeshParseError::InparsableValue {
+                        at: i,
+                        got: num_b,
+                        inner: v_ex.unwrap_err().to_string(),
+                    });
                 };
                 match swap {
                     0 => x = v,
@@ -154,10 +197,16 @@ impl Mesh {
             }
         }
 
+        if swap != 0 {
+            return Err(MeshParseError::ExcessValue {
+                max: 3,
+                data: num_b,
+            });
+        }
         Ok(())
     }
 
-    fn load_raw_texcoord(inp: &str, out: &mut Vec<Vector2>) -> Result<(), String> {
+    fn load_raw_texcoord(inp: &str, out: &mut Vec<Vector2>) -> Result<(), MeshParseError> {
         let mut swap: bool = false; // false is u and true is v
         let mut u = 0.0; // v is not need
         let mut num_b = String::with_capacity(8);
@@ -167,20 +216,21 @@ impl Mesh {
             let is_whitespace = c.is_whitespace();
             let is_valid_num = c == '.' || c.is_numeric();
             if !is_whitespace && !is_valid_num {
-                return Err(format!(
-                    "invalid data in texcoord: invalid character at {}",
-                    i
-                ));
+                return Err(MeshParseError::InvalidSymbol {
+                    at: i,
+                    section: MeshSectionType::TexCoord,
+                });
             }
 
             if is_whitespace && !num_b.is_empty() {
                 // compute
                 let v_ex = num_b.trim().parse::<f32>();
                 let Ok(v) = v_ex else {
-                    return Err(format!(
-                        "couldn't parse value at {}: invalid floating point value ({})",
-                        i, num_b
-                    ));
+                    return Err(MeshParseError::InparsableValue {
+                        at: i,
+                        got: num_b,
+                        inner: v_ex.unwrap_err().to_string(),
+                    });
                 };
                 match swap {
                     false => u = v,
@@ -196,10 +246,17 @@ impl Mesh {
             }
         }
 
+        if swap {
+            return Err(MeshParseError::ExcessValue {
+                max: 2,
+                data: num_b,
+            });
+        }
+
         Ok(())
     }
 
-    fn load_raw_indices(inp: &str, out: &mut Vec<u32>) -> Result<(), String> {
+    fn load_raw_indices(inp: &str, out: &mut Vec<u32>) -> Result<(), MeshParseError> {
         let mut num_b = String::with_capacity(8);
 
         for (i, c) in inp.chars().enumerate() {
@@ -207,20 +264,21 @@ impl Mesh {
             let is_whitespace = c.is_whitespace();
             let is_valid_num = c.is_numeric();
             if !is_whitespace && !is_valid_num {
-                return Err(format!(
-                    "invalid data in indices: invalid character at {}",
-                    i
-                ));
+                return Err(MeshParseError::InvalidSymbol {
+                    at: i,
+                    section: MeshSectionType::Indices,
+                });
             }
 
             if is_whitespace && !num_b.is_empty() {
                 // compute
                 let v_ex = num_b.parse::<u32>();
                 let Ok(v) = v_ex else {
-                    return Err(format!(
-                        "couldn't parse value {}: invalid integer value ({})",
-                        i, num_b
-                    ));
+                    return Err(MeshParseError::InparsableValue {
+                        at: i,
+                        got: num_b,
+                        inner: v_ex.unwrap_err().to_string(),
+                    });
                 };
                 out.push(v);
                 num_b.clear();
@@ -239,7 +297,7 @@ impl Mesh {
     /// Either:
     /// - `Ok`: A mesh based on the data
     /// - `Err`: An error message
-    pub fn load_mesh(b: &str) -> Result<Self, String> {
+    pub fn load_mesh(b: &str) -> Result<Self, MeshParseError> {
         let mut current_section = MeshSectionType::None;
 
         let mut data = String::with_capacity(512);
@@ -255,21 +313,14 @@ impl Mesh {
         for c in b.chars() {
             if c == Self::SECTION_START_SYMBOL {
                 if current_section != MeshSectionType::None {
-                    // evaluate section
-                    let res = match current_section {
-                        MeshSectionType::Vertices => {
-                            Self::load_raw_vertices(data.as_str(), &mut pos_data)
-                        }
-                        MeshSectionType::Indices => {
-                            Self::load_raw_indices(data.as_str(), &mut ind_data)
-                        }
-                        MeshSectionType::TexCoord => {
-                            Self::load_raw_texcoord(data.as_str(), &mut texcoord_data)
-                        }
-                        _ => Err(format!("invalid section type: {:?}", current_section)),
-                    };
-
-                    res?
+                    section_to_raw_fn!(
+                        current_section,
+                        section_name,
+                        data,
+                        pos_data,
+                        ind_data,
+                        texcoord_data
+                    )?
                 }
                 looking_at_sect_start = true;
                 first_section_occured = true;
@@ -282,14 +333,7 @@ impl Mesh {
                 if c == '\n' {
                     // end of section
                     // evaluates the section type based on name
-                    current_section = {
-                        match section_name.as_str() {
-                            Self::VERTICES_SECTION_NAME => MeshSectionType::Vertices,
-                            Self::INDICES_SECTION_NAME => MeshSectionType::Indices,
-                            Self::TEXCOORD_SECTION_NAME => MeshSectionType::TexCoord,
-                            _ => MeshSectionType::None,
-                        }
-                    };
+                    current_section = MeshSectionType::from_name(&section_name);
                     looking_at_sect_start = false;
                     continue;
                 }
@@ -302,32 +346,23 @@ impl Mesh {
         // final eval
         if current_section != MeshSectionType::None {
             // evaluate section
-            let res = match current_section {
-                MeshSectionType::Vertices => Self::load_raw_vertices(data.as_str(), &mut pos_data),
-                MeshSectionType::Indices => Self::load_raw_indices(data.as_str(), &mut ind_data),
-                MeshSectionType::TexCoord => {
-                    Self::load_raw_texcoord(data.as_str(), &mut texcoord_data)
-                }
-                _ => Err(format!("invalid section type: {:?}", current_section)),
-            };
-
-            res?
+            section_to_raw_fn!(
+                current_section,
+                section_name,
+                data,
+                pos_data,
+                ind_data,
+                texcoord_data
+            )?
         }
 
-        let pos_len = pos_data.len();
-
-        let mut vertex_data = Vec::<VertexData>::with_capacity(pos_len);
-        for (i, pos) in pos_data.iter().enumerate() {
-            vertex_data.push(VertexData::new(
-                *pos,
-                *texcoord_data.get(i).unwrap_or(&Vector2::new(0.0, 0.0)),
-            ));
+        let mut vertex_data = Vec::<VertexData>::with_capacity(pos_data.len());
+        for (i, pos) in pos_data.into_iter().enumerate() {
+            let coord = *texcoord_data.get(i).unwrap_or(&Vector2::zero());
+            vertex_data.push(VertexData::new(pos, coord));
         }
 
-        Ok(Mesh {
-            vertices: vertex_data,
-            indices: ind_data,
-        })
+        Ok(Mesh::with_set_data(vertex_data, ind_data))
     }
 
     /// Creates a new from a file of mesh data.
@@ -337,15 +372,15 @@ impl Mesh {
     /// Either:
     /// - `Ok`: A mesh based on the data
     /// - `Err`: An error message
-    pub fn load_mesh_from_file(path: &str) -> Result<Self, String> {
+    pub fn load_mesh_from_file(path: &str) -> Result<Self, MeshParseError> {
         let mut b = String::new();
 
         let f_ex = fs::File::open(path);
         let Ok(mut f) = f_ex else {
-            return Err(format!("couldn't open file {}", f_ex.unwrap_err()));
+            return Err(MeshParseError::CouldntReadFile(f_ex.unwrap_err()));
         };
         if let Err(e) = f.read_to_string(&mut b) {
-            return Err(format!("couldn't read file {}", e));
+            return Err(MeshParseError::CouldntOpenFile(e));
         }
 
         Self::load_mesh(&b)
@@ -388,3 +423,61 @@ impl Mesh {
         self.vertices.iter().map(|v| v.to_internal()).collect()
     }
 }
+
+/// Errors relating to mesh parsing.
+#[derive(Debug)]
+pub enum MeshParseError {
+    /// Thrown when there is an unexpected symbol.
+    InvalidSymbol {
+        /// The index position of the unexpected symbol
+        at: usize,
+        /// The mesh section
+        section: MeshSectionType,
+    },
+    /// Thrown when there is an unparsable symbol.
+    InparsableValue {
+        /// The index position of the symbol
+        at: usize,
+        /// The inparsable symbol
+        got: String,
+        /// The internal error
+        inner: String,
+    },
+    /// Thrown when there has been too many values.
+    ExcessValue {
+        /// The maximum amount values expected
+        max: u32,
+        /// The excess value
+        data: String,
+    },
+    /// Thrown when there has been an invalid section type.
+    InvalidSectionType(String),
+    /// Thrown when the mesh file couldn't be read.
+    CouldntReadFile(io::Error),
+    /// Thrown when the mesh file couldn't be opened.
+    CouldntOpenFile(io::Error),
+}
+
+impl fmt::Display for MeshParseError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::InvalidSymbol { at, section } => {
+                write!(f, "Invalid symbol at {at} in region {section:?}")
+            }
+            Self::InparsableValue { at, got, inner } => {
+                write!(
+                    f,
+                    "Inparsable symbol at {at}, got {got} (internal error {inner})"
+                )
+            }
+            Self::ExcessValue { data, max } => {
+                write!(f, "Too many values with '{data}', maximum amount {max}")
+            }
+            Self::InvalidSectionType(section) => write!(f, "Invalid section name: {section}"),
+            Self::CouldntReadFile(err) => write!(f, "couldn't read file: {err}"),
+            Self::CouldntOpenFile(err) => write!(f, "couldn't open file: {err}"),
+        }
+    }
+}
+
+impl Error for MeshParseError {}

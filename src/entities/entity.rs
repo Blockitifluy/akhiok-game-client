@@ -32,12 +32,21 @@ pub trait EntityTrait {
     /// # Arguements
     /// - `delta`: the time between the last to second to last frame
     fn update(&mut self, _delta: f32) {}
+
+    /// Starts and initializes the entity.
+    fn start(&mut self) {}
 }
 
 /// The base entity: has no propetries or unique methods.
 #[derive(Debug)]
 pub struct Base;
 impl EntityTrait for Base {}
+
+impl Default for Base {
+    fn default() -> Self {
+        Self
+    }
+}
 
 /// An entity, used as a node in a tree hierarchry (`EntityTree`).
 /// Used a container of `EntityType`
@@ -47,6 +56,8 @@ pub struct Entity {
     pub parent_id: Option<Uuid>,
     /// A collection of IDs representing an entity's children.
     pub children_id: Vec<Uuid>,
+    /// Marks the entity as created, before the current frame.
+    pub newly_created: bool,
     /// The non-unique name of the entity.
     name: String,
     /// The type of entity
@@ -67,11 +78,9 @@ impl Entity {
     pub fn new(name: &str, entity_type: Box<EntityType>) -> Self {
         let name_str = name.to_string();
         Self {
-            parent_id: None,
-            children_id: vec![],
             name: name_str,
             entity_type,
-            uuid: Uuid::new_v4(),
+            ..Self::default()
         }
     }
 
@@ -115,6 +124,7 @@ impl Default for Entity {
             entity_type: Box::new(EntityType::Base(Base)),
             uuid: Uuid::new_v4(),
             children_id: vec![],
+            newly_created: true,
             parent_id: None,
         }
     }

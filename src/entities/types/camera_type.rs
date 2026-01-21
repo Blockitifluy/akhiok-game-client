@@ -1,11 +1,12 @@
 //! Contains the `CameraType` entity variant
 
+use ultraviolet::{Mat4, projection::perspective_gl};
+
 use crate::{
     datatypes::vectors::Vector3,
     entities::{entity::EntityTrait, traits::object_3d::*},
 };
 use derive_akhoik_ge::Object3D;
-use ultraviolet::{Mat4, projection::perspective_gl};
 
 /// A camera used for rendering
 #[derive(Debug, Object3D)]
@@ -37,14 +38,9 @@ impl Camera {
     pub fn new(fov: f32, near_view: f32, far_view: f32) -> Self {
         let mut new = Self {
             fov,
-            transform: Mat4::default(),
             near_view,
             far_view,
-            position: Vector3::zero(),
-            rotation: Vector3::zero(),
-            front: Vector3::forward(),
-            right: Vector3::right(),
-            up: Vector3::up(),
+            ..Default::default()
         };
 
         new.recalculate_transform();
@@ -62,3 +58,19 @@ impl Camera {
 }
 
 impl EntityTrait for Camera {}
+
+impl Default for Camera {
+    fn default() -> Self {
+        Self {
+            fov: 90.0,
+            near_view: 0.1,
+            far_view: 100.0,
+            transform: Mat4::default(),
+            position: Vector3::zero(),
+            rotation: Vector3::zero(),
+            front: Vector3::forward(),
+            right: Vector3::right(),
+            up: Vector3::up(),
+        }
+    }
+}
