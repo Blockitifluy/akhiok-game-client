@@ -39,7 +39,7 @@ use std::{cell::RefCell, ptr, rc::Rc};
 use crate::{
     datatypes::{color::Color3, vectors::Vector3},
     entities::{
-        entity::EntityType,
+        entity::{Entity, EntityType},
         entity_tree::EntityTree,
         traits::object_3d::Object3D,
         types::{
@@ -85,15 +85,24 @@ fn start_window() -> Window {
     win
 }
 
-fn init_test_tree(entity_tree: Rc<RefCell<EntityTree>>) {
+fn create_tree() -> (Rc<RefCell<EntityTree>>, Rc<RefCell<Entity>>) {
+    let entity_tree = EntityTree::default();
+    let tree_cell = Rc::new(RefCell::new(entity_tree));
+
+    let tree_binding = tree_cell.clone();
+    let mut tree_borrow = tree_binding.borrow_mut();
+
+    let game_type = Game::new(GameGenre::Adventure);
+    let head = tree_borrow.add_head(game_type);
+
+    (tree_cell, head)
+}
+
+fn init_test_tree(entity_tree: Rc<RefCell<EntityTree>>, head: Rc<RefCell<Entity>>) {
     let mesh = Mesh::load_mesh(include_str!("../assets/meshs/plane.mesh")).unwrap();
     let bitmap = Texture::new(include_bytes!("../assets/awesomeface.png").to_vec());
 
     let mut tree = entity_tree.borrow_mut();
-
-    let game_type = Game::new(GameGenre::Adventure);
-    let head = tree.add_head(game_type);
-    println!("created entity tree's head: {}", head.borrow().get_uuid());
 
     let mut part_type = Part::new(&mesh);
     part_type.set_texture(bitmap);
@@ -144,10 +153,10 @@ fn enable_vertex_arrays() {
 
 /// main function
 fn main() {
+    let (tree_cell, head) = create_tree();
+
     let win = start_window();
-    let entity_tree = EntityTree::default();
-    let tree_cell = Rc::new(RefCell::new(entity_tree));
-    init_test_tree(tree_cell.clone());
+    init_test_tree(tree_cell.clone(), head);
 
     win.shader_program.use_program();
 
@@ -156,4 +165,51 @@ fn main() {
     polygon_mode(gl_helper::PolygonMode::Fill);
     win.render_loop(tree_cell);
     win.shader_program.delete();
+}
+
+// Test Section
+
+#[test]
+fn test_to_hsv_color_pure() {
+    // pure colors
+    let pure_white = Color3::from_hsv(0, 0.0, 1.0).unwrap();
+    let pure_black = Color3::from_hsv(0, 0.0, 0.0).unwrap();
+
+    let pure_red = Color3::from_hsv(0, 1.0, 1.0).unwrap();
+    let pure_green = Color3::from_hsv(120, 1.0, 1.0).unwrap();
+    let pure_blue = Color3::from_hsv(240, 1.0, 1.0).unwrap();
+
+    assert_eq!(pure_white, Color3::white());
+    assert_eq!(pure_black, Color3::black());
+
+    assert_eq!(pure_red, Color3::red());
+    assert_eq!(pure_green, Color3::green());
+    assert_eq!(pure_blue, Color3::blue());
+}
+
+#[test]
+fn test_entity_head() {
+    let (_, head) = create_tree();
+
+    assert_eq!(head.borrow().parent_id, None);
+}
+
+#[test]
+fn test_add_entity() {
+    let (tree_cell, head_binding) = create_tree();
+
+    let mut head = head_binding.borrow_mut();
+    let mut tree = tree_cell.borrow_mut();
+
+    let test_entity_binding = tree
+        .add_entity_with_parent(
+            "test entity",
+            EntityType::Base(entities::entity::Base),
+            &mut head,
+        )
+        .unwrap();
+    let test_entity = test_entity_binding.borrow_mut();
+
+    assert_eq!(head.children_id[0], test_entity.get_uuid());
+    assert_eq!(head.get_uuid(), test_entity.parent_id.unwrap());
 }

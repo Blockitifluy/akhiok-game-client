@@ -47,7 +47,7 @@ impl Color3 {
     pub const fn green() -> Color3 {
         Color3 {
             r: 0.0,
-            g: 0.0,
+            g: 1.0,
             b: 0.0,
         }
     }
@@ -103,27 +103,53 @@ impl Color3 {
     /// A tuple of (h, s, v)
     pub fn to_hsv(&self) -> (i32, f32, f32) {
         let Color3 { r, g, b } = *self;
-        let c_max = r.max(g.max(b));
-        let c_min = r.min(g.min(b));
 
-        let delta = c_max - c_min;
-        let val = c_max;
+        let v = r.max(g.max(b));
+        let min = r.min(g.min(b));
 
-        let sat = { if c_max == 0.0 { 0.0 } else { delta / c_max } };
+        let c = v - min;
 
-        let hue = {
-            if delta == 0.0 {
-                0
-            } else if c_max == r {
-                (60.0 * ((g - b) / delta % 6.0)) as i32
-            } else if c_max == g {
-                (60.0 * ((b - r) / delta + 2.0)) as i32
+        let s = { if v == 0.0 { 0.0 } else { c / v } };
+
+        let h_r = {
+            if v == min {
+                0.0
+            } else if v == r {
+                (g - b) / c
+            } else if v == g {
+                (b - r) / c + 2.0
+            } else if v == b {
+                (r - g) / c + 4.0
             } else {
-                (60.0 * ((r - g) / delta + 4.0)) as i32
+                unreachable!()
             }
-        };
+        } as i32;
 
-        (hue, sat, val)
+        let h = (h_r + 360) % 360;
+
+        (h, s, v)
+        // let min = r.min(g.min(b));
+        // let v = r.min(g.min(b));
+        // let c = v - min;
+        // println!("{}", c);
+        //
+        // let s = { if v == 0.0 { 0.0 } else { c / v } };
+        //
+        // let h = {
+        //     if c == 0.0 {
+        //         0.0
+        //     } else if r == v {
+        //         (g - b) / c
+        //     } else if g == v {
+        //         2.0 + (b - r) / c
+        //     } else if b == v {
+        //         4.0 + (r - g) / c
+        //     } else {
+        //         unreachable!();
+        //     }
+        // } as i32;
+        //
+        // (h, s, v)
     }
 
     /// Creates a new color from RGB color space.
@@ -176,22 +202,29 @@ impl Color3 {
             return Err(HSVConvertErr::ValueOutOfRange);
         }
 
-        let hue_f = hue as f32;
+        let c = val * sat;
+        let h = hue / 60;
+        let x = c * (1.0 - ((h as f32 % 2.0) - 1.0).abs());
 
-        let c: f32 = val * sat;
-        let x: f32 = c * (1.0 - ((hue_f / 60.0 % 2.0) - 1.0).abs());
-        let m: f32 = val - c;
-        let r: i32 = hue / 60;
-
-        let (r_q, g_q, b_q) = match r {
-            0 => (c, x, 0.0),
-            1 => (x, c, 0.0),
-            2 => (0.0, c, x),
-            3 => (0.0, x, c),
-            4 => (x, 0.0, c),
-            5 => (c, 0.0, x),
-            _ => unreachable!(),
+        let (r_q, g_q, b_q) = {
+            if (0..1).contains(&h) {
+                (c, x, 0.0)
+            } else if (1..2).contains(&h) {
+                (x, c, 0.0)
+            } else if (2..3).contains(&h) {
+                (0.0, c, x)
+            } else if (3..4).contains(&h) {
+                (0.0, x, c)
+            } else if (4..5).contains(&h) {
+                (x, 0.0, c)
+            } else if (5..6).contains(&h) {
+                (c, 0.0, x)
+            } else {
+                unreachable!()
+            }
         };
+
+        let m = val - c;
 
         Ok(Self::new(r_q + m, g_q + m, b_q + m).unwrap())
     }
